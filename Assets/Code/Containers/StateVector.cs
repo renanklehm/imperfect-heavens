@@ -20,6 +20,15 @@ public struct StateVector : INetworkStruct
         activeForce = _activeForce;
     }
 
+    public StateVector(StateVector source)
+    {
+        position = source.position;
+        velocity = source.velocity;
+        acceleration = source.acceleration;
+        timestamp = source.timestamp;
+        activeForce = source.activeForce;
+    }
+
     public static StateVector LerpVector(StateVector a, StateVector b, float factor)
     {
         Vector3 position = Vector3.Lerp(a.position, b.position, factor);
@@ -33,5 +42,16 @@ public struct StateVector : INetworkStruct
     public static float deltaPosition(StateVector a, StateVector b)
     {
         return (a.position - b.position).magnitude;
+    }
+
+    public override string ToString()
+    {
+        string returnMessage = "State Vector (" + timestamp.ToString("0.00") + "s)\n";
+        returnMessage += "\t '-position:\t" + position + "\n";
+        returnMessage += "\t '-velocity:\t" + velocity + "\n";
+        returnMessage += "\t '-acceleration:\t" + acceleration + "\n";
+        returnMessage += "\t '-activeForce:\t" + activeForce + "\n";
+
+        return returnMessage;
     }
 }

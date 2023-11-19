@@ -23,9 +23,7 @@ public class OnRailsBody : NetworkBehaviour, iBodySolver
     private float lastEccentricAnomaly;
     private float semiLatusRectum;
 
-    
-
-    private void Start()
+    private void Awake()
     {
         body = GetComponent<PhysicalBody>();
         plotTrajectory = GetComponentInChildren<PlotTrajectory>();
@@ -33,7 +31,6 @@ public class OnRailsBody : NetworkBehaviour, iBodySolver
             period, periapsisDistance, semiMajorAxis, eccentricity, inclination, longAscNode, argumentPeriapsis
         );
         semiLatusRectum = semiMajorAxis * Constants.DISTANCE_FACTOR * (1 - eccentricity * eccentricity);
-        GenerateTrajectory();
     }
 
     public void GetNewPoint()
@@ -46,11 +43,16 @@ public class OnRailsBody : NetworkBehaviour, iBodySolver
 
     public void GenerateTrajectory()
     {
+        StartCoroutine(GenerateTrajectoryAsync());
+    }
+
+    IEnumerator GenerateTrajectoryAsync()
+    {
         for (int j = 0; j < plotSteps; j++)
         {
             lastEccentricAnomaly = 2 * Mathf.PI / plotSteps * j;
             StateVector newStateVector = Solver.Solve(lastEccentricAnomaly, semiLatusRectum, body.mass, orbitalParameters);
-            
+
             if (j == 0)
             {
                 body.currentStateVector = newStateVector;
@@ -62,7 +64,6 @@ public class OnRailsBody : NetworkBehaviour, iBodySolver
             }
         }
         plotTrajectory.DrawTrajectory(body.trajectory);
+        yield return null;
     }
-
-
 }

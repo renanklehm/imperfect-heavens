@@ -71,8 +71,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   _interpolationDataSource: 0
   _timeStamp: 0
-  _isRunning:
-    _value: 0
   timeWarp: 1
+  maxTimestepMultiplier: 60
+  dampFactor: 0.95
   onRailsBodies: []
   freeBodies: []

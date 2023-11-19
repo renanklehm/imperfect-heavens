@@ -10,8 +10,11 @@ public class GravityController : NetworkBehaviour
     public float timeWarp = 1;
     public SmoothCurve smoothCurve;
 
-    private float maxTimestepMultiplier = 10f;
-    private float dampFactor = 0.25f;
+    [Range(1, 100)]
+    public float maxTimestepMultiplier = 10f;
+    [Range(0, 1)]
+    public float dampFactor = 0.25f;
+
     public List<PhysicalBody> onRailsBodies;
     public List<PhysicalBody> freeBodies;
     public static GravityController Instance { get; set; }
@@ -29,18 +32,6 @@ public class GravityController : NetworkBehaviour
 
     private void Start()
     {
-        onRailsBodies = new List<PhysicalBody>();
-        foreach (OnRailsBody bodySolver in FindObjectsOfType<OnRailsBody>())
-        {
-            onRailsBodies.Add(bodySolver.body);
-        }
-
-        freeBodies = new List<PhysicalBody>();
-        foreach (FreeBody bodySolver in FindObjectsOfType<FreeBody>())
-        {
-            freeBodies.Add(bodySolver.body);
-        }
-
         smoothCurve = new SmoothCurve(maxTimestepMultiplier, dampFactor);
     }
 
@@ -49,15 +40,15 @@ public class GravityController : NetworkBehaviour
         timeStamp += Time.fixedDeltaTime * timeWarp;
     }
 
-    public void RegisterBody(iBodySolver bodySolver)
+    public void RegisterBody(PhysicalBody body)
     {
-        if (bodySolver.solverType == SolverType.OnRails)
+        if (body.solverType == SolverType.OnRails)
         {
-            onRailsBodies.Add(bodySolver.body);
+            onRailsBodies.Add(body);
         }
-        else if (bodySolver.solverType == SolverType.FreeBody)
+        else if (body.solverType == SolverType.FreeBody)
         {
-            freeBodies.Add(bodySolver.body);
+            freeBodies.Add(body);
         }
     }
 

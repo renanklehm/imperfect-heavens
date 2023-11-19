@@ -105,17 +105,17 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   _interpolationDataSource: 0
-  plotTrajectory: {fileID: 0}
-  mass: 10000
-  isOnRail: 0
-  isStationaryRelativeToParent: 0
-  initialVelocity: {x: 0, y: 0, z: 0}
   _currentStateVector:
     position: {x: 0, y: 0, z: 0}
     velocity: {x: 0, y: 0, z: 0}
     acceleration: {x: 0, y: 0, z: 0}
     activeForce: {x: 0, y: 0, z: 0}
     timestamp: 0
+  plotTrajectory: {fileID: 0}
+  mass: 10000
+  solverType: 1
+  isStationaryRelativeToParent: 0
+  initialVelocity: {x: 0, y: 0, z: 0}
 --- !u!114 &7610428414282007543
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -129,7 +129,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   _interpolationDataSource: 0
-  nStepsAhead: 10000
+  nStepsAhead: 100000
 --- !u!114 &1790497414016018411
 MonoBehaviour:
   m_ObjectHideFlags: 0

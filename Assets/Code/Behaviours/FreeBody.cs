@@ -16,7 +16,7 @@ public class FreeBody : NetworkBehaviour, iBodySolver
 
     public SolverType solverType { get { return SolverType.FreeBody; } set {} }
 
-    private void Start()
+    private void Awake()
     {
         body = GetComponent<PhysicalBody>();
         plotTrajectory = GetComponentInChildren<PlotTrajectory>();
@@ -55,8 +55,8 @@ public class FreeBody : NetworkBehaviour, iBodySolver
 
     IEnumerator GenerateTrajectoryAsync()
     {
-        StateVector initialStateVector = new StateVector(transform.position, body.initialVelocity, Vector3.zero, GravityController.Instance.timeStamp);
-        body.currentStateVector = initialStateVector;
+        StateVector initialStateVector = new StateVector(body.currentStateVector);
+        Debug.Log(body.currentStateVector);
         body.trajectory = new Trajectory(body.currentStateVector, nStepsAhead);
         float scaledDeltaTime = Time.fixedDeltaTime;
         float totalTime = 0;
@@ -68,19 +68,13 @@ public class FreeBody : NetworkBehaviour, iBodySolver
             }
             StateVector newStateVector = Solver.Solve(initialStateVector, body.mass, scaledDeltaTime, _activeForce);
             body.trajectory.Enqueue(newStateVector);
-            initialStateVector = newStateVector;
+            initialStateVector = new StateVector(newStateVector);
             totalTime += scaledDeltaTime;
-            if (_activeForce.magnitude > 0)
-            {
-                scaledDeltaTime = Time.fixedDeltaTime;
-            }
-            else
-            {
-                scaledDeltaTime = GravityController.Instance.smoothCurve.Evaluate(newStateVector.acceleration.magnitude) * Time.fixedDeltaTime;
-            }
+            float scaleFactor = GravityController.Instance.smoothCurve.Evaluate(newStateVector.acceleration.magnitude);
+            scaledDeltaTime = _activeForce.magnitude > 0 ? Time.fixedDeltaTime : scaleFactor * Time.fixedDeltaTime;
+            yield return null;
         }
-        body.currentStateVector = body.trajectory.Peek();
+        body.currentStateVector = body.trajectory.Dequeue();
         needsRedraw = true;
-        yield return null;
     }
 }

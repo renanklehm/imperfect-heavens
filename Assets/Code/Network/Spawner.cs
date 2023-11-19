@@ -43,25 +43,46 @@ public class Spawner : MonoBehaviour, INetworkRunnerCallbacks
             SceneManager = gameObject.AddComponent<NetworkSceneManagerDefault>()
         });
 
-        _runner.Spawn(_gravityControllerPrefab);
+        if (_runner.IsServer)
+        {
+            _runner.Spawn(_gravityControllerPrefab);
+        }
     }
 
     public void OnPlayerJoined(NetworkRunner runner, PlayerRef player)
     {
         if (runner.IsServer)
         {
-            if (_gravitationSystem == null)
-            {
-                _gravitationSystem = _runner.Spawn(_gravitationSystemPrefab).GetComponent<GravitationalSystem>();
-            }
-
-            Vector3 spawnPosition = UnityEngine.Random.insideUnitSphere.normalized * _initialOrbit;
-            Vector3 initialVelocity = Vector3.Cross(spawnPosition, Vector3.up).normalized * Solver.GetOrbitalSpeed(_initialOrbit, _gravitationSystem.centralBody);
-            NetworkObject newPlayer = _runner.Spawn(_playerPrefab, spawnPosition, Quaternion.identity, player);
-            newPlayer.GetComponent<PhysicalBody>().initialVelocity = initialVelocity;
-            _spawnedCharacters.Add(player, newPlayer);
-            _runner.SetPlayerObject(player, newPlayer);
+            StartCoroutine(SafeSpawnPlayer(player));
         }
+    }
+
+    void INetworkRunnerCallbacks.OnPlayerLeft(NetworkRunner runner, PlayerRef player)
+    {
+        if (_runner.IsServer)
+        {
+            _runner.Despawn(_spawnedCharacters[player]);
+        }
+    }
+
+    IEnumerator SafeSpawnPlayer(PlayerRef player)
+    {
+        while (GravityController.Instance == null)
+        {
+            yield return new WaitForEndOfFrame();
+        }
+
+        if (_gravitationSystem == null)
+        {
+            _gravitationSystem = _runner.Spawn(_gravitationSystemPrefab).GetComponent<GravitationalSystem>();
+        }
+
+        Vector3 spawnPosition = UnityEngine.Random.insideUnitSphere.normalized * _initialOrbit;
+        Vector3 initialVelocity = Vector3.Cross(spawnPosition, Vector3.up).normalized * Solver.GetOrbitalSpeed(_initialOrbit, _gravitationSystem.centralBody);
+        NetworkObject newPlayer = _runner.Spawn(_playerPrefab, spawnPosition, Quaternion.identity, player);
+        newPlayer.GetComponent<PhysicalBody>().initialVelocity = initialVelocity;
+        _spawnedCharacters.Add(player, newPlayer);
+        _runner.SetPlayerObject(player, newPlayer);
     }
 
     void INetworkRunnerCallbacks.OnConnectedToServer(NetworkRunner runner)
@@ -100,11 +121,6 @@ public class Spawner : MonoBehaviour, INetworkRunnerCallbacks
 
     void INetworkRunnerCallbacks.OnInputMissing(NetworkRunner runner, PlayerRef player, NetworkInput input)
     {
-    }
-
-    void INetworkRunnerCallbacks.OnPlayerLeft(NetworkRunner runner, PlayerRef player)
-    {
-        Debug.Log("Player " + player + " left.");
     }
 
     void INetworkRunnerCallbacks.OnReliableDataReceived(NetworkRunner runner, PlayerRef player, ArraySegment<byte> data)

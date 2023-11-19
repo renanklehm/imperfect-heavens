@@ -2793,7 +2793,7 @@ MonoBehaviour:
     RawGuidValue: 9547f620628fffe46a22ee816d8c448d
   _playerPrefab:
     RawGuidValue: 6a6c273a0e933044bab48e04bc480aa7
-  _initialOrbit: 12
+  _initialOrbit: 7
 --- !u!1 &2096292675
 GameObject:
   m_ObjectHideFlags: 0
