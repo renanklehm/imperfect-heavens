@@ -1,8 +1,9 @@
 using System;
+using Fusion;
 using UnityEngine;
 
 [Serializable]
-public struct StateVector
+public struct StateVector : INetworkStruct
 {
     [SerializeField] public Vector3 position;
     [SerializeField] public Vector3 velocity;

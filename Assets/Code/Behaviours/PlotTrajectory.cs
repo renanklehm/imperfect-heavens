@@ -35,6 +35,12 @@ public class PlotTrajectory : MonoBehaviour
         }
     }
 
+    public void AddPoint(Vector3 point)
+    {
+        lineRenderer.positionCount++;
+        lineRenderer.SetPosition(lineRenderer.positionCount - 1, point);
+    }
+
     public void UpdateCurrentPosition(Vector3 position)
     {
         lineRenderer.SetPosition(0, position);

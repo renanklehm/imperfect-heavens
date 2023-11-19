@@ -1,8 +1,9 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using Fusion;
 
-public class PhysicalBody : MonoBehaviour
+public class PhysicalBody : NetworkBehaviour
 {
     public Trajectory trajectory;
     public PlotTrajectory plotTrajectory;
@@ -10,37 +11,52 @@ public class PhysicalBody : MonoBehaviour
     public bool isOnRail;
     public bool isStationaryRelativeToParent;
     public Vector3 initialVelocity;
-    public StateVector currentStateVector { get { return _currentStateVector; } set { _currentStateVector = value; UpdateStateVector(); } }
-    private StateVector _currentStateVector;
-    private iBodySolver bodySolver;
 
-    private void Start()
+    [Networked(OnChanged = nameof(UpdateStateVector))] public StateVector currentStateVector { get; set; }
+    public iBodySolver bodySolver;
+
+    private void Awake()
     {
-        plotTrajectory = GetComponentInChildren<PlotTrajectory>();
         bodySolver = GetComponent<iBodySolver>();
+        plotTrajectory = GetComponentInChildren<PlotTrajectory>();
+        //GravityController.Instance.RegisterBody(bodySolver);
     }
 
-    private void FixedUpdate()
+    public override void FixedUpdateNetwork()
     {
-        if (trajectory != null && !isStationaryRelativeToParent)
+        if (!isStationaryRelativeToParent)
         {
-            while (trajectory.Peek().timestamp <= GravityController.Instance.timeStamp)
-            {                
-                trajectory.Dequeue();
-                plotTrajectory.DropFirstPoint();
-                bodySolver.GetNewPoint();
+            if (trajectory == null)
+            {
+                while (trajectory.Peek().timestamp <= GravityController.Instance.timeStamp)
+                {
+                    Debug.Log("Dequeueing " + name);
+                    trajectory.Dequeue();
+                    plotTrajectory.DropFirstPoint();
+                    bodySolver.GetNewPoint();
+                }
+
+                if (HasStateAuthority == true)
+                {
+                    Debug.Log("Updating " + name);
+                    float oldTimestamp = currentStateVector.timestamp;
+                    float newTimestamp = trajectory.Peek().timestamp - oldTimestamp;
+                    float currentTimestamp = GravityController.Instance.timeStamp - oldTimestamp;
+                    currentStateVector = StateVector.LerpVector(currentStateVector, trajectory.Peek(), currentTimestamp / newTimestamp);
+                }
+
+                plotTrajectory.UpdateCurrentPosition(transform.position);
+            }
+            else
+            {
+                bodySolver.GenerateTrajectory();
             }
 
-            float oldTimestamp = currentStateVector.timestamp;
-            float newTimestamp = trajectory.Peek().timestamp - oldTimestamp;
-            float currentTimestamp = GravityController.Instance.timeStamp - oldTimestamp;
-            currentStateVector = StateVector.LerpVector(currentStateVector, trajectory.Peek(), currentTimestamp / newTimestamp);
-            plotTrajectory.UpdateCurrentPosition(transform.position);
         }
     }
-
-    private void UpdateStateVector()
+    
+    private static void UpdateStateVector(Changed<PhysicalBody> changed)
     {
-        transform.position = _currentStateVector.position;
+        changed.Behaviour.transform.position = changed.Behaviour.currentStateVector.position;
     }
 }

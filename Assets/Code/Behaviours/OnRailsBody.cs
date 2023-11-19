@@ -1,11 +1,14 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using Fusion;
 
 [RequireComponent(typeof(PhysicalBody))]
-public class OnRailsBody : MonoBehaviour, iBodySolver
+public class OnRailsBody : NetworkBehaviour, iBodySolver
 {
-    public PhysicalBody body;
+    public SolverType solverType { get { return SolverType.OnRails; } set { } }
+    public PhysicalBody body { get; set; }
+
     public PlotTrajectory plotTrajectory;
     public OrbitalParameters orbitalParameters;
     public int plotSteps;
@@ -17,9 +20,10 @@ public class OnRailsBody : MonoBehaviour, iBodySolver
     public float longAscNode;
     public float argumentPeriapsis;
 
-    private float timeAdjust;
     private float lastEccentricAnomaly;
     private float semiLatusRectum;
+
+    
 
     private void Start()
     {
@@ -29,7 +33,7 @@ public class OnRailsBody : MonoBehaviour, iBodySolver
             period, periapsisDistance, semiMajorAxis, eccentricity, inclination, longAscNode, argumentPeriapsis
         );
         semiLatusRectum = semiMajorAxis * Constants.DISTANCE_FACTOR * (1 - eccentricity * eccentricity);
-        CalculateTrajectory();
+        GenerateTrajectory();
     }
 
     public void GetNewPoint()
@@ -40,7 +44,7 @@ public class OnRailsBody : MonoBehaviour, iBodySolver
         plotTrajectory.DrawTrajectory(body.trajectory);
     }
 
-    private void CalculateTrajectory()
+    public void GenerateTrajectory()
     {
         for (int j = 0; j < plotSteps; j++)
         {
@@ -49,7 +53,6 @@ public class OnRailsBody : MonoBehaviour, iBodySolver
             
             if (j == 0)
             {
-                timeAdjust = newStateVector.timestamp;
                 body.currentStateVector = newStateVector;
                 body.trajectory = new Trajectory(newStateVector, plotSteps);
             }

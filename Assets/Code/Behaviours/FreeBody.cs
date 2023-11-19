@@ -1,31 +1,41 @@
 using System.Collections;
-using System.Collections.Generic;
+using Fusion;
 using UnityEngine;
 
 [RequireComponent(typeof(PhysicalBody))]
-public class FreeBody : MonoBehaviour, iBodySolver
+public class FreeBody : NetworkBehaviour, iBodySolver
 {
-    public float timeWarp = 1f;
-    public PhysicalBody body;
-    public PlotTrajectory plotTrajectory;
-    public int nStepsAhead;
+    [Networked] private NetworkBool needsRedraw { get; set; }
+    public PhysicalBody body { get; set; }
 
+    public int nStepsAhead = 10000;
 
-    public Vector3 _activeForce;
+    private PlotTrajectory plotTrajectory;
+    private Vector3 _activeForce;
     private float burnDuration = 10f;
+
+    public SolverType solverType { get { return SolverType.FreeBody; } set {} }
 
     private void Start()
     {
         body = GetComponent<PhysicalBody>();
         plotTrajectory = GetComponentInChildren<PlotTrajectory>();
         _activeForce = Vector3.zero;
-        StartCoroutine(GenerateTrajectory());
+    }
+
+    public override void FixedUpdateNetwork()
+    {
+        if (needsRedraw)
+        {
+            plotTrajectory.DrawTrajectory(body.trajectory);
+            needsRedraw = false;
+        }
     }
 
     public void AddForce(Vector3 force)
     {
         _activeForce = force;
-        StartCoroutine(GenerateTrajectory());
+        StartCoroutine(GenerateTrajectoryAsync());
     }
 
     public void GetNewPoint()
@@ -34,9 +44,16 @@ public class FreeBody : MonoBehaviour, iBodySolver
         deltaTime *= Time.fixedDeltaTime;
         StateVector newStateVector = Solver.Solve(body.trajectory.newestStateVector, body.mass, deltaTime);
         body.trajectory.Enqueue(newStateVector);
+        plotTrajectory.AddPoint(newStateVector.position);
+        needsRedraw = true;
     }
 
-    IEnumerator GenerateTrajectory()
+    public void GenerateTrajectory()
+    {
+        StartCoroutine(GenerateTrajectoryAsync());
+    }
+
+    IEnumerator GenerateTrajectoryAsync()
     {
         StateVector initialStateVector = new StateVector(transform.position, body.initialVelocity, Vector3.zero, GravityController.Instance.timeStamp);
         body.currentStateVector = initialStateVector;
@@ -63,7 +80,7 @@ public class FreeBody : MonoBehaviour, iBodySolver
             }
         }
         body.currentStateVector = body.trajectory.Peek();
-        plotTrajectory.DrawTrajectory(body.trajectory);
+        needsRedraw = true;
         yield return null;
     }
 }

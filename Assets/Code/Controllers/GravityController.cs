@@ -1,39 +1,44 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using Fusion;
 
-public class GravityController : MonoBehaviour
+public class GravityController : NetworkBehaviour
 {
-    public float timeWarp;
-    public float timeStamp;
-    public SmoothCurve smoothCurve;
-    public float maxTimestepMultiplier;
-    public float dampFactor;
+    [Networked] public float timeStamp { get; set; }
 
-    private List<OnRailsBody> onRailsBodies;
-    private List<FreeBody> freeBodies;
-    public static GravityController Instance { get; private set; }
+    public float timeWarp = 1;
+    public SmoothCurve smoothCurve;
+
+    private float maxTimestepMultiplier = 10f;
+    private float dampFactor = 0.25f;
+    public List<PhysicalBody> onRailsBodies;
+    public List<PhysicalBody> freeBodies;
+    public static GravityController Instance { get; set; }
     private void Awake()
     {
         if (Instance != null && Instance != this)
         {
-            Destroy(this);
+            Runner.Despawn(GetComponent<NetworkObject>());
         }
         else
         {
             Instance = this;
         }
+    }
 
-        onRailsBodies = new List<OnRailsBody>();
-        foreach (OnRailsBody body in FindObjectsOfType<OnRailsBody>())
+    private void Start()
+    {
+        onRailsBodies = new List<PhysicalBody>();
+        foreach (OnRailsBody bodySolver in FindObjectsOfType<OnRailsBody>())
         {
-            onRailsBodies.Add(body);
+            onRailsBodies.Add(bodySolver.body);
         }
 
-        freeBodies = new List<FreeBody>();
-        foreach (FreeBody body in FindObjectsOfType<FreeBody>())
+        freeBodies = new List<PhysicalBody>();
+        foreach (FreeBody bodySolver in FindObjectsOfType<FreeBody>())
         {
-            freeBodies.Add(body);
+            freeBodies.Add(bodySolver.body);
         }
 
         smoothCurve = new SmoothCurve(maxTimestepMultiplier, dampFactor);
@@ -44,12 +49,24 @@ public class GravityController : MonoBehaviour
         timeStamp += Time.fixedDeltaTime * timeWarp;
     }
 
+    public void RegisterBody(iBodySolver bodySolver)
+    {
+        if (bodySolver.solverType == SolverType.OnRails)
+        {
+            onRailsBodies.Add(bodySolver.body);
+        }
+        else if (bodySolver.solverType == SolverType.FreeBody)
+        {
+            freeBodies.Add(bodySolver.body);
+        }
+    }
+
     public Vector3 GetNetForce(float smallBodyMass, Vector3 smallBodyPosition)
     {
         Vector3 netForce = Vector3.zero;
-        foreach (OnRailsBody onRailBody in onRailsBodies)
+        foreach (PhysicalBody body in onRailsBodies)
         {
-            netForce += CalculateForce(onRailBody.body, smallBodyMass, smallBodyPosition);
+            netForce += CalculateForce(body, smallBodyMass, smallBodyPosition);
         }
         return netForce;
     }

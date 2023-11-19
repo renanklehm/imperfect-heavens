@@ -14,6 +14,11 @@ public class Solver
         return KepplerEquation(eccentricAnomaly, semiLatusRectum, mass, orbitalParameters);
     }
 
+    public static float GetOrbitalSpeed(float orbitalHeight, PhysicalBody relativeBody)
+    {
+        return Mathf.Sqrt((Constants.GRAVITATIONAL_CONSTANT * relativeBody.mass) / (orbitalHeight * Constants.DISTANCE_FACTOR)) / Constants.DISTANCE_FACTOR;
+    }
+
     private static StateVector EulerMethod(StateVector initialStateVector, float mass, float deltaTime, Vector3 activeForce)
     {
         Vector3 currentNetForce = GravityController.Instance.GetNetForce(mass, initialStateVector.position) + activeForce;
