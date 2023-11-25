@@ -5,10 +5,9 @@ using Fusion;
 
 public class Body : NetworkBehaviour
 {
-    [Networked(OnChanged = nameof(UpdateStateVector))] public StateVector currentStateVector { get; set; }
+    [Networked(OnChanged = nameof(UpdateStateVector))] 
+    public StateVector currentStateVector { get; set; }
     public iBodySolver bodySolver;
-
-    public float DEBUG;
 
     public Trajectory trajectory;
     public float mass;
@@ -35,6 +34,11 @@ public class Body : NetworkBehaviour
                 Vector3.zero,
                 GravityManager.Instance.timeStamp
             );
+        }
+
+        if (solverType == SolverType.FreeBody)
+        {
+            name = "Player (ID: " + Object.InputAuthority.PlayerId.ToString("00") + ")";
         }
     }
 
@@ -64,7 +68,6 @@ public class Body : NetworkBehaviour
             Quaternion newRotation = Quaternion.LookRotation(directionOfMotion, newUp);
             transform.rotation = newRotation;
 
-            DEBUG = StateVector.ScoreDifference(currentStateVector, trajectory.Peek());
             if (StateVector.ScoreDifference(currentStateVector, trajectory.Peek()) > Constants.DESYNC_MARGIN_OF_ERROR && solverType == SolverType.FreeBody)
             {
                 Debug.Log("Regenerating " + name);

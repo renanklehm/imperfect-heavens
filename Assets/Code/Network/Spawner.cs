@@ -80,7 +80,6 @@ public class Spawner : MonoBehaviour, INetworkRunnerCallbacks
         Vector3 spawnPosition = UnityEngine.Random.insideUnitSphere.normalized * _initialOrbit;
         Vector3 initialVelocity = Vector3.Cross(spawnPosition, Vector3.up).normalized * Solver.GetOrbitalSpeed(_initialOrbit, _gravitationSystem.centralBody);
         NetworkObject newPlayer = _runner.Spawn(_playerPrefab, spawnPosition, Quaternion.identity, player);
-        newPlayer.name = "Player (ID: " + player.PlayerId.ToString("00") + ")";
         newPlayer.GetComponent<Body>().initialVelocity = initialVelocity;
         _spawnedCharacters.Add(player, newPlayer);
         _runner.SetPlayerObject(player, newPlayer);
