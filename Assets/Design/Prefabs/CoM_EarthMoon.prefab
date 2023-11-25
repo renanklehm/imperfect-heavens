@@ -90,6 +90,7 @@ MonoBehaviour:
   - {fileID: 7081070187398667243}
   - {fileID: 3055642010670850031}
   - {fileID: 6019675261396248279}
+  - {fileID: 6948222368168226989}
   SimulationBehaviours: []
 --- !u!114 &3055642010670850031
 MonoBehaviour:
@@ -100,21 +101,21 @@ MonoBehaviour:
   m_GameObject: {fileID: 687614883541187088}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 80dcdbc70b39fa74588528f79fae8d4e, type: 3}
+  m_Script: {fileID: 11500000, guid: a2cf01bb7a82f544abcf5608c70e18bb, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
   _interpolationDataSource: 0
-  plotTrajectory: {fileID: 0}
-  mass: 5.972e+24
-  isOnRail: 1
-  isStationaryRelativeToParent: 1
-  initialVelocity: {x: 0, y: 0, z: 0}
   _currentStateVector:
     position: {x: 0, y: 0, z: 0}
     velocity: {x: 0, y: 0, z: 0}
     acceleration: {x: 0, y: 0, z: 0}
     activeForce: {x: 0, y: 0, z: 0}
     timestamp: 0
+  trajectory: {fileID: 0}
+  mass: 5.972e+24
+  solverType: 0
+  isStationaryRelativeToParent: 1
+  initialVelocity: {x: 0, y: 0, z: 0}
 --- !u!114 &6019675261396248279
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -128,7 +129,6 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   _interpolationDataSource: 0
-  plotTrajectory: {fileID: 0}
   plotSteps: 100
   period: 0
   periapsisDistance: 0
@@ -284,7 +284,7 @@ GameObject:
   m_Component:
   - component: {fileID: 3533934904650610760}
   - component: {fileID: 4223898192985774806}
-  - component: {fileID: 7588062145826720968}
+  - component: {fileID: 2854073135378664550}
   m_Layer: 0
   m_Name: Trajectory
   m_TagString: Untagged
@@ -411,7 +411,7 @@ LineRenderer:
   m_UseWorldSpace: 1
   m_Loop: 0
   m_ApplyActiveColorSpace: 1
---- !u!114 &7588062145826720968
+--- !u!114 &2854073135378664550
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -420,16 +420,26 @@ MonoBehaviour:
   m_GameObject: {fileID: 5841758082873913570}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 1fee2f0f089d9b645abdd6ca40a9f45d, type: 3}
+  m_Script: {fileID: 11500000, guid: 6e0f7462191a0b1428fcf05beefbd9d9, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  arrowMarker: {fileID: 0}
-  lineRenderer: {fileID: 0}
+  _interpolationDataSource: 0
+  newestStateVector:
+    position: {x: 0, y: 0, z: 0}
+    velocity: {x: 0, y: 0, z: 0}
+    acceleration: {x: 0, y: 0, z: 0}
+    activeForce: {x: 0, y: 0, z: 0}
+    timestamp: 0
+  arrowMarker: {fileID: 945068651990442877, guid: dc3f942306547ec4b9cfa7b044036742,
+    type: 3}
+  lineRenderer: {fileID: 4223898192985774806}
   maxColorSamples: 8
-  plotResolution: 10
-  arrowApparentSize: 0
+  plotResolution: 100
+  arrowApparentSize: 0.01
   lowAcceleration: {r: 0, g: 1, b: 0, a: 1}
   highAcceleration: {r: 1, g: 0, b: 0, a: 1}
+  isRedrawing: 0
+  needRedraw: 0
 --- !u!1 &7467164794594213975
 GameObject:
   m_ObjectHideFlags: 0
@@ -440,7 +450,7 @@ GameObject:
   m_Component:
   - component: {fileID: 1376760027274379731}
   - component: {fileID: 3238515760284003549}
-  - component: {fileID: 4122225130237370374}
+  - component: {fileID: 6948222368168226989}
   m_Layer: 0
   m_Name: Trajectory
   m_TagString: Untagged
@@ -567,7 +577,7 @@ LineRenderer:
   m_UseWorldSpace: 1
   m_Loop: 0
   m_ApplyActiveColorSpace: 1
---- !u!114 &4122225130237370374
+--- !u!114 &6948222368168226989
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -576,16 +586,26 @@ MonoBehaviour:
   m_GameObject: {fileID: 7467164794594213975}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 1fee2f0f089d9b645abdd6ca40a9f45d, type: 3}
+  m_Script: {fileID: 11500000, guid: 6e0f7462191a0b1428fcf05beefbd9d9, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  arrowMarker: {fileID: 0}
-  lineRenderer: {fileID: 0}
+  _interpolationDataSource: 0
+  newestStateVector:
+    position: {x: 0, y: 0, z: 0}
+    velocity: {x: 0, y: 0, z: 0}
+    acceleration: {x: 0, y: 0, z: 0}
+    activeForce: {x: 0, y: 0, z: 0}
+    timestamp: 0
+  arrowMarker: {fileID: 945068651990442877, guid: dc3f942306547ec4b9cfa7b044036742,
+    type: 3}
+  lineRenderer: {fileID: 3238515760284003549}
   maxColorSamples: 8
-  plotResolution: 10
-  arrowApparentSize: 0
+  plotResolution: 100
+  arrowApparentSize: 0.01
   lowAcceleration: {r: 0, g: 1, b: 0, a: 1}
   highAcceleration: {r: 1, g: 0, b: 0, a: 1}
+  isRedrawing: 0
+  needRedraw: 0
 --- !u!1 &8870827384459634985
 GameObject:
   m_ObjectHideFlags: 0
@@ -676,6 +696,7 @@ MonoBehaviour:
   - {fileID: 1375042886943989628}
   - {fileID: 8871073406894962803}
   - {fileID: 1734365359641902323}
+  - {fileID: 2854073135378664550}
   SimulationBehaviours: []
 --- !u!114 &8871073406894962803
 MonoBehaviour:
@@ -686,21 +707,21 @@ MonoBehaviour:
   m_GameObject: {fileID: 8870827384459634985}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 80dcdbc70b39fa74588528f79fae8d4e, type: 3}
+  m_Script: {fileID: 11500000, guid: a2cf01bb7a82f544abcf5608c70e18bb, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
   _interpolationDataSource: 0
-  plotTrajectory: {fileID: 0}
-  mass: 7.347673e+22
-  isOnRail: 1
-  isStationaryRelativeToParent: 0
-  initialVelocity: {x: 0, y: 0, z: 0}
   _currentStateVector:
     position: {x: 0, y: 0, z: 0}
     velocity: {x: 0, y: 0, z: 0}
     acceleration: {x: 0, y: 0, z: 0}
     activeForce: {x: 0, y: 0, z: 0}
     timestamp: 0
+  trajectory: {fileID: 0}
+  mass: 7.3e+22
+  solverType: 0
+  isStationaryRelativeToParent: 0
+  initialVelocity: {x: 0, y: 0, z: 0}
 --- !u!114 &1734365359641902323
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -714,7 +735,6 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   _interpolationDataSource: 0
-  plotTrajectory: {fileID: 0}
   plotSteps: 100
   period: 2328185.8
   periapsisDistance: 362.6

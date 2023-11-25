@@ -12,7 +12,7 @@ GameObject:
   - component: {fileID: 2425645421678873268}
   - component: {fileID: 9030991525710250904}
   m_Layer: 0
-  m_Name: GravityController
+  m_Name: GravityManager
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -71,8 +71,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   _interpolationDataSource: 0
   _timeStamp: 0
-  timeWarp: 1
   maxTimestepMultiplier: 60
   dampFactor: 0.95
+  timeWarp: 1
   onRailsBodies: []
   freeBodies: []

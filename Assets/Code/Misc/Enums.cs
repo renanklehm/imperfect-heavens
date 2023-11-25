@@ -1,4 +1,4 @@
-public enum OrbitalDirection
+public enum BurnDirection
 {
     Prograde = 1,
     Retrograde = -1,
@@ -24,4 +24,12 @@ public enum SolverType
 {
     OnRails,
     FreeBody
+}
+
+public enum TrajectoryRedrawMode
+{
+    Incremental,
+    Decremental,
+    Update,
+    NoRedraw
 }

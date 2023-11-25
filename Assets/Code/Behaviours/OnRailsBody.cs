@@ -3,13 +3,11 @@ using System.Collections.Generic;
 using UnityEngine;
 using Fusion;
 
-[RequireComponent(typeof(PhysicalBody))]
+[RequireComponent(typeof(Body))]
 public class OnRailsBody : NetworkBehaviour, iBodySolver
 {
     public SolverType solverType { get { return SolverType.OnRails; } set { } }
-    public PhysicalBody body { get; set; }
-
-    public PlotTrajectory plotTrajectory;
+    public Body body { get; set; }
     public OrbitalParameters orbitalParameters;
     public int plotSteps;
     public float period;
@@ -25,8 +23,7 @@ public class OnRailsBody : NetworkBehaviour, iBodySolver
 
     private void Awake()
     {
-        body = GetComponent<PhysicalBody>();
-        plotTrajectory = GetComponentInChildren<PlotTrajectory>();
+        body = GetComponent<Body>();
         orbitalParameters = new OrbitalParameters(
             period, periapsisDistance, semiMajorAxis, eccentricity, inclination, longAscNode, argumentPeriapsis
         );
@@ -37,8 +34,7 @@ public class OnRailsBody : NetworkBehaviour, iBodySolver
     {
         lastEccentricAnomaly += 2 * Mathf.PI / plotSteps;
         StateVector newStateVector = Solver.Solve(lastEccentricAnomaly, semiLatusRectum, body.mass, orbitalParameters);
-        body.trajectory.Enqueue(newStateVector);
-        plotTrajectory.DrawTrajectory(body.trajectory);
+        body.trajectory.Enqueue(newStateVector, TrajectoryRedrawMode.Incremental);
     }
 
     public void GenerateTrajectory()
@@ -48,7 +44,8 @@ public class OnRailsBody : NetworkBehaviour, iBodySolver
 
     IEnumerator GenerateTrajectoryAsync()
     {
-        for (int j = 0; j < plotSteps; j++)
+        body.trajectory.Enqueue(body.currentStateVector);
+        for (int j = 0; j <= plotSteps; j++)
         {
             lastEccentricAnomaly = 2 * Mathf.PI / plotSteps * j;
             StateVector newStateVector = Solver.Solve(lastEccentricAnomaly, semiLatusRectum, body.mass, orbitalParameters);
@@ -56,14 +53,13 @@ public class OnRailsBody : NetworkBehaviour, iBodySolver
             if (j == 0)
             {
                 body.currentStateVector = newStateVector;
-                body.trajectory = new Trajectory(newStateVector, plotSteps);
             }
             else
             {
                 body.trajectory.Enqueue(newStateVector);
             }
         }
-        plotTrajectory.DrawTrajectory(body.trajectory);
+        body.trajectory.needRedraw = true;
         yield return null;
     }
 }

@@ -2,15 +2,12 @@ using System.Collections;
 using Fusion;
 using UnityEngine;
 
-[RequireComponent(typeof(PhysicalBody))]
+[RequireComponent(typeof(Body))]
 public class FreeBody : NetworkBehaviour, iBodySolver
 {
-    [Networked] private NetworkBool needsRedraw { get; set; }
-    public PhysicalBody body { get; set; }
+    public Body body { get; set; }
 
     public int nStepsAhead = 10000;
-
-    private PlotTrajectory plotTrajectory;
     private Vector3 _activeForce;
     private float burnDuration = 10f;
 
@@ -18,48 +15,45 @@ public class FreeBody : NetworkBehaviour, iBodySolver
 
     private void Awake()
     {
-        body = GetComponent<PhysicalBody>();
-        plotTrajectory = GetComponentInChildren<PlotTrajectory>();
+        body = GetComponent<Body>();
         _activeForce = Vector3.zero;
     }
 
-    public override void FixedUpdateNetwork()
+    public void AddForce(Vector3 force, float _burnDuration)
     {
-        if (needsRedraw)
-        {
-            plotTrajectory.DrawTrajectory(body.trajectory);
-            needsRedraw = false;
-        }
-    }
-
-    public void AddForce(Vector3 force)
-    {
+        Debug.Log(name + " is burning " + (force.magnitude / 1000f).ToString("0.00") + "kN for " + burnDuration.ToString("0.00") + "s");
         _activeForce = force;
+        burnDuration = _burnDuration;
+        StopAllCoroutines();
         StartCoroutine(GenerateTrajectoryAsync());
     }
 
     public void GetNewPoint()
     {
-        float deltaTime = GravityController.Instance.smoothCurve.Evaluate(body.trajectory.newestStateVector.acceleration.magnitude);
+        float deltaTime = GravityManager.Instance.smoothCurve.Evaluate(body.trajectory.newestStateVector.acceleration.magnitude);
         deltaTime *= Time.fixedDeltaTime;
         StateVector newStateVector = Solver.Solve(body.trajectory.newestStateVector, body.mass, deltaTime);
-        body.trajectory.Enqueue(newStateVector);
-        plotTrajectory.AddPoint(newStateVector.position);
-        needsRedraw = true;
+        body.trajectory.Enqueue(newStateVector, TrajectoryRedrawMode.Incremental);
     }
 
     public void GenerateTrajectory()
     {
+        StopAllCoroutines();
         StartCoroutine(GenerateTrajectoryAsync());
     }
 
     IEnumerator GenerateTrajectoryAsync()
     {
+        while (body.trajectory.isRedrawing)
+        {
+            yield return new WaitForEndOfFrame();
+        }
+
         StateVector initialStateVector = new StateVector(body.currentStateVector);
-        Debug.Log(body.currentStateVector);
-        body.trajectory = new Trajectory(body.currentStateVector, nStepsAhead);
+        body.trajectory.ClearQueue();
         float scaledDeltaTime = Time.fixedDeltaTime;
         float totalTime = 0;
+        int counter = 0;
         for (int i = 1; i < nStepsAhead; i++)
         {
             if (totalTime >= burnDuration)
@@ -70,11 +64,24 @@ public class FreeBody : NetworkBehaviour, iBodySolver
             body.trajectory.Enqueue(newStateVector);
             initialStateVector = new StateVector(newStateVector);
             totalTime += scaledDeltaTime;
-            float scaleFactor = GravityController.Instance.smoothCurve.Evaluate(newStateVector.acceleration.magnitude);
+            float acceleration = newStateVector.acceleration.magnitude;
+            float scaleFactor = GravityManager.Instance.smoothCurve.Evaluate(acceleration);
             scaledDeltaTime = _activeForce.magnitude > 0 ? Time.fixedDeltaTime : scaleFactor * Time.fixedDeltaTime;
-            yield return null;
+            counter++;
+            if (counter >= Constants.COROUTINE_LOOP_BATCHSIZE)
+            {
+                counter = 0;
+                yield return new WaitForEndOfFrame();
+            }
         }
-        body.currentStateVector = body.trajectory.Dequeue();
-        needsRedraw = true;
+        body.trajectory.needRedraw = true;
+        if (HasStateAuthority)
+        {
+            body.currentStateVector = body.trajectory.Dequeue();
+        }
+        else
+        {
+            body.trajectory.Dequeue();
+        }
     }
 }

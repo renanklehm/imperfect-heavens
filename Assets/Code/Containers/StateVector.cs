@@ -11,6 +11,16 @@ public struct StateVector : INetworkStruct
     [SerializeField] public Vector3 activeForce;
     public float timestamp;
 
+    public StateVector(Vector3 _position = new Vector3())
+    {
+        position = _position;
+        velocity = Vector3.zero;
+        acceleration = Vector3.zero;
+        activeForce = Vector3.zero;
+        timestamp = 0f;
+    }
+
+
     public StateVector(Vector3 _position, Vector3 _velocity, Vector3 _acceleration, float _ticket, Vector3 _activeForce = new Vector3())
     {
         position = _position;
@@ -27,6 +37,15 @@ public struct StateVector : INetworkStruct
         acceleration = source.acceleration;
         timestamp = source.timestamp;
         activeForce = source.activeForce;
+    }
+
+    public static float ScoreDifference(StateVector a,StateVector b)
+    {
+        float score = 0;
+        score += (a.position - b.position).sqrMagnitude;
+        score += (a.velocity - b.velocity).sqrMagnitude;
+        score += (a.acceleration - b.acceleration).sqrMagnitude;
+        return score;
     }
 
     public static StateVector LerpVector(StateVector a, StateVector b, float factor)

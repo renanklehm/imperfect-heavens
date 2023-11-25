@@ -4,5 +4,5 @@ using UnityEngine;
 
 public class GravitationalSystem : MonoBehaviour
 {
-    public PhysicalBody centralBody;
+    public Body centralBody;
 }

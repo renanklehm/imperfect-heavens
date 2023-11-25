@@ -4,9 +4,14 @@ using UnityEngine;
 
 public class Solver
 {
-    public static StateVector Solve(StateVector initialStateVector, float mass, float deltaTime, Vector3 activeForce = new Vector3())
+    public static StateVector Solve(StateVector initialStateVector, float mass, float deltaTime, Vector3 activeForce = new Vector3(), float timeStamp = -1f)
     {
-        return EulerMethod(initialStateVector, mass, deltaTime, activeForce);
+        if (timeStamp == -1f)
+        {
+            timeStamp = GravityManager.Instance.timeStamp + deltaTime;
+        }
+
+        return EulerMethod(initialStateVector, mass, deltaTime, timeStamp, activeForce);
     }
 
     public static StateVector Solve(float eccentricAnomaly, float semiLatusRectum, float mass, OrbitalParameters orbitalParameters)
@@ -14,14 +19,14 @@ public class Solver
         return KepplerEquation(eccentricAnomaly, semiLatusRectum, mass, orbitalParameters);
     }
 
-    public static float GetOrbitalSpeed(float orbitalHeight, PhysicalBody relativeBody)
+    public static float GetOrbitalSpeed(float orbitalHeight, Body relativeBody)
     {
         return Mathf.Sqrt((Constants.GRAVITATIONAL_CONSTANT * relativeBody.mass) / (orbitalHeight * Constants.DISTANCE_FACTOR)) / Constants.DISTANCE_FACTOR;
     }
 
-    private static StateVector EulerMethod(StateVector initialStateVector, float mass, float deltaTime, Vector3 activeForce)
+    private static StateVector EulerMethod(StateVector initialStateVector, float mass, float deltaTime, float timeStamp, Vector3 activeForce)
     {
-        Vector3 currentNetForce = GravityController.Instance.GetNetForce(mass, initialStateVector.position) + activeForce;
+        Vector3 currentNetForce = GravityManager.Instance.GetNetForce(initialStateVector, mass, timeStamp) + activeForce;
         Vector3 newAcceleration = currentNetForce / mass;
         Vector3 newVelocity = initialStateVector.velocity + (newAcceleration * deltaTime) / Constants.DISTANCE_FACTOR;
         Vector3 newPosition = initialStateVector.position + newVelocity * deltaTime;

@@ -3,7 +3,7 @@ using System;
 public interface iBodySolver
 {
     public SolverType solverType { get; set; }
-    public PhysicalBody body { get; set; }
+    public Body body { get; set; }
 
     public void GetNewPoint()
     {

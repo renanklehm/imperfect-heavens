@@ -5,4 +5,6 @@ public struct Constants
     public const float SECONDS_TO_DECILMAL_HOUR = 1f / 3600f;
     public const float GRAVITATIONAL_CONSTANT = 6.67408e-11f;
     public const float DEG2RAD = 0.0174533f;
+    public const int COROUTINE_LOOP_BATCHSIZE = 10000;
+    public const float DESYNC_MARGIN_OF_ERROR = 0.01f;
 }

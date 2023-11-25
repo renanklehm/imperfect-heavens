@@ -67,7 +67,7 @@ public class Spawner : MonoBehaviour, INetworkRunnerCallbacks
 
     IEnumerator SafeSpawnPlayer(PlayerRef player)
     {
-        while (GravityController.Instance == null)
+        while (GravityManager.Instance == null)
         {
             yield return new WaitForEndOfFrame();
         }
@@ -80,7 +80,8 @@ public class Spawner : MonoBehaviour, INetworkRunnerCallbacks
         Vector3 spawnPosition = UnityEngine.Random.insideUnitSphere.normalized * _initialOrbit;
         Vector3 initialVelocity = Vector3.Cross(spawnPosition, Vector3.up).normalized * Solver.GetOrbitalSpeed(_initialOrbit, _gravitationSystem.centralBody);
         NetworkObject newPlayer = _runner.Spawn(_playerPrefab, spawnPosition, Quaternion.identity, player);
-        newPlayer.GetComponent<PhysicalBody>().initialVelocity = initialVelocity;
+        newPlayer.name = "Player (ID: " + player.PlayerId.ToString("00") + ")";
+        newPlayer.GetComponent<Body>().initialVelocity = initialVelocity;
         _spawnedCharacters.Add(player, newPlayer);
         _runner.SetPlayerObject(player, newPlayer);
     }
@@ -115,14 +116,6 @@ public class Spawner : MonoBehaviour, INetworkRunnerCallbacks
         Debug.Log("Migrating host to " + hostMigrationToken);
     }
 
-    void INetworkRunnerCallbacks.OnInput(NetworkRunner runner, NetworkInput input)
-    {
-    }
-
-    void INetworkRunnerCallbacks.OnInputMissing(NetworkRunner runner, PlayerRef player, NetworkInput input)
-    {
-    }
-
     void INetworkRunnerCallbacks.OnReliableDataReceived(NetworkRunner runner, PlayerRef player, ArraySegment<byte> data)
     {
         Debug.Log("Reliable data received");
@@ -151,5 +144,15 @@ public class Spawner : MonoBehaviour, INetworkRunnerCallbacks
     void INetworkRunnerCallbacks.OnUserSimulationMessage(NetworkRunner runner, SimulationMessagePtr message)
     {
         Debug.Log("Simulation msg: " + message);
+    }
+
+    void INetworkRunnerCallbacks.OnInput(NetworkRunner runner, NetworkInput input)
+    {
+        return;
+    }
+
+    void INetworkRunnerCallbacks.OnInputMissing(NetworkRunner runner, PlayerRef player, NetworkInput input)
+    {
+        return;
     }
 }
