@@ -8,7 +8,7 @@ public class Solver
     {
         if (timeStamp == -1f)
         {
-            timeStamp = GravityManager.Instance.timeStamp + deltaTime;
+            timeStamp = GravityManager.Instance.timestamp + deltaTime;
         }
 
         return EulerMethod(initialStateVector, mass, deltaTime, timeStamp, activeForce);

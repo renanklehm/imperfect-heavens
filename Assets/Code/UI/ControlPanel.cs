@@ -28,6 +28,21 @@ public class ControlPanel : MonoBehaviour
         contentUI.SetActive(false);
     }
 
+    private void Update()
+    {
+        if (shipController != null)
+        {
+            if (shipController.freeBody.isBurning)
+            {
+                foreach (Button button in GetComponentsInChildren<Button>()) button.interactable = false;
+            }
+            else
+            {
+                foreach (Button button in GetComponentsInChildren<Button>()) button.interactable = true;
+            }
+        }
+    }
+
     public void SetBurnDuration(float value)
     {
         shipController.burnDuration = value;
@@ -42,33 +57,7 @@ public class ControlPanel : MonoBehaviour
 
     public void AddThrust(int _direction)
     {
-        Vector3 direction;
-        switch (_direction)
-        {
-            case 1:
-                direction = shipController.transform.forward;
-                break;
-            case -1:
-                direction = -shipController.transform.forward;
-                break;
-            case 2:
-                direction = shipController.transform.up;
-                break;
-            case -2:
-                direction = -shipController.transform.up;
-                break;
-            case 3:
-                direction = shipController.transform.right;
-                break;
-            case -3:
-                direction = -shipController.transform.right;
-                break;
-            default:
-                direction = Vector3.zero;
-                break;
-        }
-
-        shipController.burnDirection = direction;
+        shipController.burnDirection = (BurnDirection)_direction;
     }
 
     IEnumerator FindShipController()

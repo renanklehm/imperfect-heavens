@@ -6,7 +6,7 @@ using Fusion;
 public class GravityManager : NetworkBehaviour
 {
     [Networked] 
-    public float timeStamp { get; set; }
+    public float timestamp { get; set; }
 
     [Range(1, 100)]
     public float maxTimestepMultiplier = 10f;
@@ -36,7 +36,7 @@ public class GravityManager : NetworkBehaviour
     {
         if (HasStateAuthority)
         {
-            timeStamp += Time.fixedDeltaTime * timeWarp;
+            timestamp += Time.fixedDeltaTime * timeWarp;
         }
     }
 

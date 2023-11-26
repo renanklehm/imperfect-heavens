@@ -9,7 +9,6 @@ public class Trajectory : NetworkBehaviour
 {
     public StateVector newestStateVector;
     public Queue<StateVector> stateVectorQueue;
-    public Queue<StateVector> renderingQueue;
     public Queue<GameObject> arrowsQueue;
 
     public GameObject arrowMarker;
@@ -26,7 +25,6 @@ public class Trajectory : NetworkBehaviour
     void Awake()
     {
         stateVectorQueue = new Queue<StateVector>();
-        renderingQueue = new Queue<StateVector>();
         arrowsQueue = new Queue<GameObject>();
         lineRenderer = GetComponent<LineRenderer>();
     }
@@ -48,41 +46,19 @@ public class Trajectory : NetworkBehaviour
         lineRenderer.positionCount = 0;
     }
 
-    public void Enqueue(StateVector newStateVector, TrajectoryRedrawMode redrawMode = TrajectoryRedrawMode.NoRedraw)
+    public void Enqueue(StateVector newStateVector)
     {
         stateVectorQueue.Enqueue(newStateVector);
         newestStateVector = newStateVector;
-        if (redrawMode != TrajectoryRedrawMode.NoRedraw)
-        {
-            if (redrawMode == TrajectoryRedrawMode.Incremental)
-            {
-                lineRenderer.positionCount++;
-                lineRenderer.SetPosition(lineRenderer.positionCount - 1, newStateVector.position);
-            }
-            else if (redrawMode == TrajectoryRedrawMode.Update)
-            {
-                StartCoroutine(RedrawTrajectoryAsync());
-            }
-        }
+        StartCoroutine(RedrawTrajectoryAsync());
     }
 
-    public StateVector Dequeue(TrajectoryRedrawMode redrawMode = TrajectoryRedrawMode.Decremental)
+    public StateVector Dequeue()
     {
-        if (redrawMode != TrajectoryRedrawMode.NoRedraw)
-        {
-            if (redrawMode == TrajectoryRedrawMode.Decremental && renderingQueue.Count > 0 && renderingQueue.Peek().timestamp <= stateVectorQueue.Peek().timestamp)
-            {
-                Vector3[] tempArray = new Vector3[lineRenderer.positionCount];
-                lineRenderer.GetPositions(tempArray);
-                lineRenderer.SetPositions(tempArray.Skip(1).ToArray());
-                renderingQueue.Dequeue();
-                if (arrowsQueue.TryDequeue(out GameObject arrow))
-                {
-                    Destroy(arrow);
-                }
-            }
-        }
-        return stateVectorQueue.Dequeue();
+        StateVector returnVector = stateVectorQueue.Dequeue();
+        if (arrowsQueue.Count > 0) Destroy(arrowsQueue.Dequeue());
+        StartCoroutine(RedrawTrajectoryAsync());
+        return returnVector;
     }
 
     IEnumerator RedrawTrajectoryAsync()
@@ -90,36 +66,34 @@ public class Trajectory : NetworkBehaviour
         isRedrawing = true;
         StateVector[] stateVectorArray = stateVectorQueue.ToArray();
         int maxPoints = stateVectorArray.Length;
-        int[] positionSampleIndices = SampleIndices(maxPoints, plotResolution);
 
-        lineRenderer.positionCount = positionSampleIndices.Length;
-        int realIndex = 0;
-        int lineRendererIndex = 0;
+        foreach (GameObject _ in arrowsQueue.ToArray()) Destroy(arrowsQueue.Dequeue());
+
+        lineRenderer.positionCount = maxPoints;
+        Vector3[] positions = new Vector3[maxPoints];
+        int index = 0;
         int loopCounter = 0;
-        foreach(StateVector stateVector in stateVectorArray)
+        foreach (StateVector stateVector in stateVectorArray)
         {
-            if (positionSampleIndices.Contains(realIndex))
+            positions[index] = stateVector.position;
+            if (stateVector.activeForce.magnitude > 0)
             {
-                lineRenderer.SetPosition(lineRendererIndex, stateVector.position);
-                renderingQueue.Enqueue(stateVector);
-                if (stateVector.activeForce.magnitude > 0)
-                {
-                    GameObject newArrow = Instantiate(arrowMarker, stateVector.position, Quaternion.LookRotation(stateVector.activeForce.normalized, Vector3.up));
-                    newArrow.transform.localScale = new Vector3(arrowApparentSize, arrowApparentSize, arrowApparentSize);
-                    arrowsQueue.Enqueue(newArrow);
-                }
-                lineRendererIndex++;
+                GameObject newArrow = Instantiate(arrowMarker, stateVector.position, Quaternion.LookRotation(stateVector.activeForce.normalized, Vector3.up));
+                newArrow.transform.localScale = new Vector3(arrowApparentSize, arrowApparentSize, arrowApparentSize);
+                arrowsQueue.Enqueue(newArrow);
             }
-            if (loopCounter >= Constants.COROUTINE_LOOP_BATCHSIZE / 10f)
+
+            if (loopCounter >= Constants.COROUTINE_LOOP_BATCHSIZE)
             {
                 loopCounter = 0;
                 yield return new WaitForEndOfFrame();
             }
 
-            realIndex++;
+            index++;
             loopCounter++;
         }
 
+        lineRenderer.SetPositions(positions);
         isRedrawing = false;
         needRedraw = false;
     }
@@ -146,7 +120,7 @@ public class Trajectory : NetworkBehaviour
                 {
                     float oldTimestamp = stateVectorArray[i].timestamp;
                     float newTimestamp = stateVectorArray[i + 1].timestamp;
-                    float currentTimestamp = GravityManager.Instance.timeStamp - oldTimestamp;
+                    float currentTimestamp = GravityManager.Instance.timestamp - oldTimestamp;
                     newStateVector = StateVector.LerpVector(stateVectorArray[i], stateVectorArray[i + 1], currentTimestamp / newTimestamp);
                     break;
                 }
@@ -166,19 +140,5 @@ public class Trajectory : NetworkBehaviour
             result[i] = tempArray[i].acceleration.magnitude;
         }
         return result;
-    }
-
-    private int[] SampleIndices(int totalPoints, int numSamples)
-    {
-        List<int> sampledIndices = new List<int>();
-        float step = (float)(totalPoints - 1) / (numSamples - 1);
-
-        for (int i = 0; i < numSamples; i++)
-        {
-            int index = Mathf.RoundToInt(i * step);
-            sampledIndices.Add(index);
-        }
-
-        return sampledIndices.ToArray();
     }
 }

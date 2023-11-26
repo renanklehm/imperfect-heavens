@@ -53,7 +53,7 @@ public struct StateVector : INetworkStruct
         Vector3 position = Vector3.Lerp(a.position, b.position, factor);
         Vector3 velocity = Vector3.Lerp(a.velocity, b.velocity, factor);
         Vector3 acceleration = Vector3.Lerp(a.acceleration, b.acceleration, factor);
-        float simulationTicket = Mathf.Lerp(a.timestamp, b.timestamp, factor);
+        float simulationTicket = GravityManager.Instance.timestamp;
 
         return new StateVector(position, velocity, acceleration, simulationTicket);
     }

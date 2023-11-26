@@ -15,7 +15,7 @@ public class Body : NetworkBehaviour
     public bool isStationaryRelativeToParent;
     public Vector3 initialVelocity;
 
-    private bool fullyInstantiated;
+    public bool fullyInstantiated;
 
     private void Awake()
     {
@@ -32,7 +32,7 @@ public class Body : NetworkBehaviour
                 transform.position,
                 initialVelocity,
                 Vector3.zero,
-                GravityManager.Instance.timeStamp
+                GravityManager.Instance.timestamp
             );
         }
 
@@ -52,14 +52,10 @@ public class Body : NetworkBehaviour
 
         if (!isStationaryRelativeToParent && fullyInstantiated)
         {
-            float simulationTimeStamp = GravityManager.Instance.timeStamp;
-            float currentTimeStamp = trajectory.Peek().timestamp;
 
-            if (currentTimeStamp <= simulationTimeStamp)
-            {
-                trajectory.Dequeue();
-                bodySolver.GetNewPoint();
-            }
+            if (trajectory.Peek().timestamp <= GravityManager.Instance.timestamp) trajectory.Dequeue();
+            if (trajectory.IsEmpty()) bodySolver.GenerateTrajectory();
+
             Vector3 directionOfMotion = (currentStateVector.position + currentStateVector.velocity) - currentStateVector.position;
             Vector3 originOfMotion = -currentStateVector.position;
             directionOfMotion.Normalize();
@@ -70,8 +66,8 @@ public class Body : NetworkBehaviour
 
             if (StateVector.ScoreDifference(currentStateVector, trajectory.Peek()) > Constants.DESYNC_MARGIN_OF_ERROR && solverType == SolverType.FreeBody)
             {
-                Debug.Log("Regenerating " + name);
-                bodySolver.GenerateTrajectory();
+                //Debug.Log("Regenerating " + name);
+                //bodySolver.GenerateTrajectory();
             }
         }
     }
@@ -82,7 +78,7 @@ public class Body : NetworkBehaviour
         {
             float oldTimestamp = currentStateVector.timestamp;
             float newTimestamp = trajectory.Peek().timestamp - oldTimestamp;
-            float currentTimestamp = GravityManager.Instance.timeStamp - oldTimestamp;
+            float currentTimestamp = GravityManager.Instance.timestamp - oldTimestamp;
             StateVector newStateVector = StateVector.LerpVector(currentStateVector, trajectory.Peek(), currentTimestamp / newTimestamp);
 
             currentStateVector = newStateVector;

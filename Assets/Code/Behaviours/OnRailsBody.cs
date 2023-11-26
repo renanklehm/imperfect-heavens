@@ -34,7 +34,7 @@ public class OnRailsBody : NetworkBehaviour, iBodySolver
     {
         lastEccentricAnomaly += 2 * Mathf.PI / plotSteps;
         StateVector newStateVector = Solver.Solve(lastEccentricAnomaly, semiLatusRectum, body.mass, orbitalParameters);
-        body.trajectory.Enqueue(newStateVector, TrajectoryRedrawMode.Incremental);
+        body.trajectory.Enqueue(newStateVector);
     }
 
     public void GenerateTrajectory()

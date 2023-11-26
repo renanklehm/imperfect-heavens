@@ -8,12 +8,10 @@ using System;
 [RequireComponent(typeof(FreeBody))]
 public class ShipController : NetworkBehaviour, INetworkRunnerCallbacks
 {
-    public Vector3 burnDirection;
+    public BurnDirection burnDirection;
     public float burnDuration;
     public float burnStrength;
-
-    private FreeBody freeBody;
-    private InputStruct inputStruct;
+    public FreeBody freeBody;
 
     private void Start()
     {
@@ -37,28 +35,41 @@ public class ShipController : NetworkBehaviour, INetworkRunnerCallbacks
     public override void FixedUpdateNetwork()
     {
         if (GetInput<InputStruct>(out var input) == false) return;
-        freeBody.AddForce(input.burnDirection * input.burnStrength, input.burnDuration);
-        burnDirection = Vector3.zero;
-    }
-
-    private bool IsInputReady()
-    {
-        return burnDirection != Vector3.zero && burnStrength > 0;
+        Debug.Log(name + " - " + input.burnDirection.Bits);
+        Vector3 direction = Vector3.zero;
+        if (input.burnDirection.IsSet(BurnDirection.nullDir)) return;
+        else if (input.burnDirection.IsSet(BurnDirection.Prograde)) direction = transform.forward;
+        else if (input.burnDirection.IsSet(BurnDirection.Retrograde)) direction = -transform.forward;
+        else if (input.burnDirection.IsSet(BurnDirection.Normal)) direction = transform.up;
+        else if (input.burnDirection.IsSet(BurnDirection.AntiNormal)) direction = -transform.up;
+        else if (input.burnDirection.IsSet(BurnDirection.RadialOut)) direction = transform.right;
+        else if (input.burnDirection.IsSet(BurnDirection.RadialIn)) direction = -transform.right;
+        freeBody.AddForce(direction * input.burnStrength, input.burnDuration);
     }
 
     void INetworkRunnerCallbacks.OnInput(NetworkRunner runner, NetworkInput input)
     {
-        if (IsInputReady())
+        InputStruct newInput = new InputStruct();
+
+        if (burnDirection != BurnDirection.nullDir)
         {
-            burnDuration = burnDuration == 0 ? Time.fixedDeltaTime : burnDuration;
-            inputStruct = new InputStruct(burnDirection, burnStrength, burnDuration, GravityManager.Instance.timeStamp);
-            input.Set(inputStruct);
-        }
+            newInput.burnDirection.Set(BurnDirection.Prograde, burnDirection == BurnDirection.Prograde);
+            newInput.burnDirection.Set(BurnDirection.Retrograde, burnDirection == BurnDirection.Retrograde);
+            newInput.burnDirection.Set(BurnDirection.Normal, burnDirection == BurnDirection.Normal);
+            newInput.burnDirection.Set(BurnDirection.AntiNormal, burnDirection == BurnDirection.AntiNormal);
+            newInput.burnDirection.Set(BurnDirection.RadialIn, burnDirection == BurnDirection.RadialIn);
+            newInput.burnDirection.Set(BurnDirection.RadialOut, burnDirection == BurnDirection.RadialOut);
+            newInput.burnDuration = burnDuration;
+            newInput.burnStrength = burnStrength;
+            newInput.burnStartTime = GravityManager.Instance.timestamp;
+            burnDirection = BurnDirection.nullDir;
+            input.Set(newInput);        
+        }       
     }
 
     void INetworkRunnerCallbacks.OnInputMissing(NetworkRunner runner, PlayerRef player, NetworkInput input)
     {
-        Debug.Log("Player: " + player.PlayerId + " missed " + input);
+        return;
     }
 
     void INetworkRunnerCallbacks.OnPlayerJoined(NetworkRunner runner, PlayerRef player)

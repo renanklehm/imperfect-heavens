@@ -5,11 +5,13 @@ using UnityEngine;
 [RequireComponent(typeof(Body))]
 public class FreeBody : NetworkBehaviour, iBodySolver
 {
+    [Networked]
+    public bool isBurning { get; set; }
     public Body body { get; set; }
 
-    public int nStepsAhead = 10000;
     private Vector3 _activeForce;
-    private float burnDuration = 10f;
+    private float burnDuration;
+    private float burnStartTimestamp;
 
     public SolverType solverType { get { return SolverType.FreeBody; } set {} }
 
@@ -19,13 +21,19 @@ public class FreeBody : NetworkBehaviour, iBodySolver
         _activeForce = Vector3.zero;
     }
 
+    private void Update()
+    {
+        if (burnDuration + burnStartTimestamp <= GravityManager.Instance.timestamp) isBurning = false;
+    }
+
     public void AddForce(Vector3 force, float _burnDuration)
     {
         Debug.Log(name + " is burning " + (force.magnitude / 1000f).ToString("0.00") + "kN for " + burnDuration.ToString("0.00") + "s");
         _activeForce = force;
         burnDuration = _burnDuration;
-        StopAllCoroutines();
-        StartCoroutine(GenerateTrajectoryAsync());
+        burnStartTimestamp = GravityManager.Instance.timestamp;
+        isBurning = true;
+        GenerateTrajectory();
     }
 
     public void GetNewPoint()
@@ -33,12 +41,13 @@ public class FreeBody : NetworkBehaviour, iBodySolver
         float deltaTime = GravityManager.Instance.smoothCurve.Evaluate(body.trajectory.newestStateVector.acceleration.magnitude);
         deltaTime *= Time.fixedDeltaTime;
         StateVector newStateVector = Solver.Solve(body.trajectory.newestStateVector, body.mass, deltaTime);
-        body.trajectory.Enqueue(newStateVector, TrajectoryRedrawMode.Incremental);
+        body.trajectory.Enqueue(newStateVector);
     }
 
     public void GenerateTrajectory()
     {
         StopAllCoroutines();
+        body.trajectory.isRedrawing = false;
         StartCoroutine(GenerateTrajectoryAsync());
     }
 
@@ -53,15 +62,17 @@ public class FreeBody : NetworkBehaviour, iBodySolver
         body.trajectory.ClearQueue();
         float scaledDeltaTime = Time.fixedDeltaTime;
         float totalTime = 0;
+        float lastTimeRecorded = 0;
         int counter = 0;
-        for (int i = 1; i < nStepsAhead; i++)
+        while (totalTime <= Constants.TRAJECTORY_MAX_TIME_AHEAD)
         {
-            if (totalTime >= burnDuration)
-            {
-                _activeForce = Vector3.zero;
-            }
+            if (totalTime >= burnDuration) _activeForce = Vector3.zero;
             StateVector newStateVector = Solver.Solve(initialStateVector, body.mass, scaledDeltaTime, _activeForce);
-            body.trajectory.Enqueue(newStateVector);
+            if (totalTime - lastTimeRecorded > Constants.TRAJECTORY_TIME_INTERVAL)
+            {
+                body.trajectory.Enqueue(newStateVector);
+                lastTimeRecorded = totalTime;
+            }
             initialStateVector = new StateVector(newStateVector);
             totalTime += scaledDeltaTime;
             float acceleration = newStateVector.acceleration.magnitude;
@@ -75,13 +86,5 @@ public class FreeBody : NetworkBehaviour, iBodySolver
             }
         }
         body.trajectory.needRedraw = true;
-        if (HasStateAuthority)
-        {
-            body.currentStateVector = body.trajectory.Dequeue();
-        }
-        else
-        {
-            body.trajectory.Dequeue();
-        }
     }
 }
