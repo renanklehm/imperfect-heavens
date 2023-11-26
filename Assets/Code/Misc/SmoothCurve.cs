@@ -15,6 +15,6 @@ public class SmoothCurve
 
     public float Evaluate (float value)
     {
-        return 1 + Mathf.Pow((maxValue + 1) * dampFactor, value);
+        return 1 + ((maxValue - 1) * Mathf.Pow(dampFactor, value));
     }
 }

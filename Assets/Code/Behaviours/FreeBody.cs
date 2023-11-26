@@ -1,69 +1,83 @@
 using System.Collections;
-using System.Collections.Generic;
+using Fusion;
 using UnityEngine;
 
-[RequireComponent(typeof(PhysicalBody))]
-public class FreeBody : MonoBehaviour, iBodySolver
+[RequireComponent(typeof(Body))]
+public class FreeBody : NetworkBehaviour, iBodySolver
 {
-    public float timeWarp = 1f;
-    public PhysicalBody body;
-    public PlotTrajectory plotTrajectory;
-    public int nStepsAhead;
+    public Body body { get; set; }
 
+    private Vector3 _activeForce;
+    private float burnDuration;
+    private float burnStartTimestamp;
 
-    public Vector3 _activeForce;
-    private float burnDuration = 10f;
+    public SolverType solverType { get { return SolverType.FreeBody; } set {} }
 
-    private void Start()
+    private void Awake()
     {
-        body = GetComponent<PhysicalBody>();
-        plotTrajectory = GetComponentInChildren<PlotTrajectory>();
+        body = GetComponent<Body>();
         _activeForce = Vector3.zero;
-        StartCoroutine(GenerateTrajectory());
     }
 
-    public void AddForce(Vector3 force)
+    public void AddForce(Vector3 force, float _burnDuration)
     {
         _activeForce = force;
-        StartCoroutine(GenerateTrajectory());
+        burnDuration = _burnDuration;
+        burnStartTimestamp = GravityManager.Instance.timestamp;
+        GenerateTrajectory();
     }
 
     public void GetNewPoint()
     {
-        float deltaTime = GravityController.Instance.smoothCurve.Evaluate(body.trajectory.newestStateVector.acceleration.magnitude);
+        float deltaTime = GravityManager.Instance.smoothCurve.Evaluate(body.trajectory.newestStateVector.acceleration.magnitude);
         deltaTime *= Time.fixedDeltaTime;
         StateVector newStateVector = Solver.Solve(body.trajectory.newestStateVector, body.mass, deltaTime);
         body.trajectory.Enqueue(newStateVector);
     }
 
-    IEnumerator GenerateTrajectory()
+    public void GenerateTrajectory()
     {
-        StateVector initialStateVector = new StateVector(transform.position, body.initialVelocity, Vector3.zero, GravityController.Instance.timeStamp);
-        body.currentStateVector = initialStateVector;
-        body.trajectory = new Trajectory(body.currentStateVector, nStepsAhead);
+        StopAllCoroutines();
+        body.trajectory.isRedrawing = false;
+        StartCoroutine(GenerateTrajectoryAsync());
+    }
+
+    IEnumerator GenerateTrajectoryAsync()
+    {
+        Debug.Log("Generating trajectory for " + name);
+
+        while (body.trajectory.isRedrawing)
+        {
+            yield return new WaitForEndOfFrame();
+        }
+
+        StateVector initialStateVector = new StateVector(body.currentStateVector);
+        body.trajectory.ClearQueue();
         float scaledDeltaTime = Time.fixedDeltaTime;
         float totalTime = 0;
-        for (int i = 1; i < nStepsAhead; i++)
+        float lastTimeRecorded = 0;
+        int counter = 0;
+        while (totalTime <= Constants.TRAJECTORY_MAX_TIME_AHEAD)
         {
-            if (totalTime >= burnDuration)
-            {
-                _activeForce = Vector3.zero;
-            }
+            if (totalTime >= burnDuration) _activeForce = Vector3.zero;
             StateVector newStateVector = Solver.Solve(initialStateVector, body.mass, scaledDeltaTime, _activeForce);
-            body.trajectory.Enqueue(newStateVector);
-            initialStateVector = newStateVector;
-            totalTime += scaledDeltaTime;
-            if (_activeForce.magnitude > 0)
+            if (totalTime - lastTimeRecorded > Constants.TRAJECTORY_TIME_INTERVAL)
             {
-                scaledDeltaTime = Time.fixedDeltaTime;
+                body.trajectory.Enqueue(newStateVector);
+                lastTimeRecorded = totalTime;
             }
-            else
+            initialStateVector = new StateVector(newStateVector);
+            totalTime += scaledDeltaTime;
+            float acceleration = newStateVector.acceleration.magnitude;
+            float scaleFactor = GravityManager.Instance.smoothCurve.Evaluate(acceleration);
+            scaledDeltaTime = _activeForce.magnitude > 0 ? Time.fixedDeltaTime : scaleFactor * Time.fixedDeltaTime;
+            counter++;
+            if (counter >= Constants.COROUTINE_LOOP_BATCHSIZE)
             {
-                scaledDeltaTime = GravityController.Instance.smoothCurve.Evaluate(newStateVector.acceleration.magnitude) * Time.fixedDeltaTime;
+                counter = 0;
+                yield return new WaitForEndOfFrame();
             }
         }
-        body.currentStateVector = body.trajectory.Peek();
-        plotTrajectory.DrawTrajectory(body.trajectory);
-        yield return null;
+        body.trajectory.needRedraw = true;
     }
 }
