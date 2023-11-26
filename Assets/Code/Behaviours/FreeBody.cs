@@ -5,8 +5,6 @@ using UnityEngine;
 [RequireComponent(typeof(Body))]
 public class FreeBody : NetworkBehaviour, iBodySolver
 {
-    [Networked]
-    public bool isBurning { get; set; }
     public Body body { get; set; }
 
     private Vector3 _activeForce;
@@ -21,18 +19,11 @@ public class FreeBody : NetworkBehaviour, iBodySolver
         _activeForce = Vector3.zero;
     }
 
-    private void Update()
-    {
-        if (burnDuration + burnStartTimestamp <= GravityManager.Instance.timestamp) isBurning = false;
-    }
-
     public void AddForce(Vector3 force, float _burnDuration)
     {
-        Debug.Log(name + " is burning " + (force.magnitude / 1000f).ToString("0.00") + "kN for " + burnDuration.ToString("0.00") + "s");
         _activeForce = force;
         burnDuration = _burnDuration;
         burnStartTimestamp = GravityManager.Instance.timestamp;
-        isBurning = true;
         GenerateTrajectory();
     }
 
@@ -53,6 +44,8 @@ public class FreeBody : NetworkBehaviour, iBodySolver
 
     IEnumerator GenerateTrajectoryAsync()
     {
+        Debug.Log("Generating trajectory for " + name);
+
         while (body.trajectory.isRedrawing)
         {
             yield return new WaitForEndOfFrame();

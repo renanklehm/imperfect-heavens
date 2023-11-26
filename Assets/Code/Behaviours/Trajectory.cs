@@ -16,6 +16,7 @@ public class Trajectory : NetworkBehaviour
     public int maxColorSamples = 8;
     public int plotResolution;
     public float arrowApparentSize;
+    public float maxSize;
     public Color lowAcceleration = Color.green;
     public Color highAcceleration = Color.red;
 
@@ -57,7 +58,9 @@ public class Trajectory : NetworkBehaviour
     {
         StateVector returnVector = stateVectorQueue.Dequeue();
         if (arrowsQueue.Count > 0) Destroy(arrowsQueue.Dequeue());
-        StartCoroutine(RedrawTrajectoryAsync());
+        Vector3[] oldPositions = new Vector3[lineRenderer.positionCount];
+        lineRenderer.GetPositions(oldPositions);
+        lineRenderer.SetPositions(oldPositions.Skip(1).ToArray());
         return returnVector;
     }
 
@@ -96,6 +99,7 @@ public class Trajectory : NetworkBehaviour
         lineRenderer.SetPositions(positions);
         isRedrawing = false;
         needRedraw = false;
+        maxSize = lineRenderer.positionCount;
     }
 
     public bool IsEmpty()

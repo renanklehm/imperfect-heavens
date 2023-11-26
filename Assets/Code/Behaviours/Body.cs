@@ -53,8 +53,15 @@ public class Body : NetworkBehaviour
         if (!isStationaryRelativeToParent && fullyInstantiated)
         {
 
-            if (trajectory.Peek().timestamp <= GravityManager.Instance.timestamp) trajectory.Dequeue();
-            if (trajectory.IsEmpty()) bodySolver.GenerateTrajectory();
+            if (trajectory.Peek().timestamp <= GravityManager.Instance.timestamp)
+            {
+                trajectory.Dequeue();
+            }
+            if (trajectory.stateVectorQueue.Count <= trajectory.maxSize / 2f)
+            {
+                Debug.Log("Extending trajectory of " + name);
+                bodySolver.GenerateTrajectory();
+            }
 
             Vector3 directionOfMotion = (currentStateVector.position + currentStateVector.velocity) - currentStateVector.position;
             Vector3 originOfMotion = -currentStateVector.position;
@@ -64,24 +71,32 @@ public class Body : NetworkBehaviour
             Quaternion newRotation = Quaternion.LookRotation(directionOfMotion, newUp);
             transform.rotation = newRotation;
 
-            if (StateVector.ScoreDifference(currentStateVector, trajectory.Peek()) > Constants.DESYNC_MARGIN_OF_ERROR && solverType == SolverType.FreeBody)
-            {
-                //Debug.Log("Regenerating " + name);
-                //bodySolver.GenerateTrajectory();
-            }
+            trajectory.lineRenderer.SetPosition(0, transform.position);
         }
     }
 
     public override void FixedUpdateNetwork()
     {
-        if (!isStationaryRelativeToParent && fullyInstantiated && HasStateAuthority)
+        if (!isStationaryRelativeToParent && fullyInstantiated)
         {
             float oldTimestamp = currentStateVector.timestamp;
             float newTimestamp = trajectory.Peek().timestamp - oldTimestamp;
             float currentTimestamp = GravityManager.Instance.timestamp - oldTimestamp;
             StateVector newStateVector = StateVector.LerpVector(currentStateVector, trajectory.Peek(), currentTimestamp / newTimestamp);
 
-            currentStateVector = newStateVector;
+            if (HasStateAuthority)
+            {
+                currentStateVector = newStateVector;
+            }
+            else
+            {
+                float errorScore = StateVector.ScoreDifference(currentStateVector, newStateVector);
+                if (errorScore > Constants.DESYNC_MARGIN_OF_ERROR && solverType == SolverType.FreeBody)
+                {
+                    Debug.Log("Error Score: " + errorScore);
+                    bodySolver.GenerateTrajectory();
+                }
+            }
         }
     }
     
