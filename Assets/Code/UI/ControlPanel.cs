@@ -21,6 +21,8 @@ public class ControlPanel : MonoBehaviour
     private TMP_Text thrustLabel;
 
     private ShipController shipController;
+    private float burnDuration;
+    private float burnStrength;
 
     private void Start()
     {
@@ -28,36 +30,21 @@ public class ControlPanel : MonoBehaviour
         contentUI.SetActive(false);
     }
 
-    private void Update()
-    {
-        if (shipController != null)
-        {
-            if (shipController.freeBody.isBurning)
-            {
-                foreach (Button button in GetComponentsInChildren<Button>()) button.interactable = false;
-            }
-            else
-            {
-                foreach (Button button in GetComponentsInChildren<Button>()) button.interactable = true;
-            }
-        }
-    }
-
     public void SetBurnDuration(float value)
     {
-        shipController.burnDuration = value;
+        burnDuration = value;
         durationLabel.text = value.ToString("0.00") + " s";
     }
 
     public void SetBurnStrength(float value)
     {
-        shipController.burnStrength = value;
+        burnStrength = value;
         thrustLabel.text = (value / 1000).ToString("F2") + " kN";
     }
 
     public void AddThrust(int _direction)
     {
-        shipController.burnDirection = (BurnDirection)_direction;
+        shipController.RPC_AddManeuver((BurnDirection)_direction, burnStrength, burnDuration, shipController.Object.InputAuthority);
     }
 
     IEnumerator FindShipController()
