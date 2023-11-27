@@ -68,4 +68,16 @@ public class Solver
         float time = meanAnomaly * orbitalPeriod / (2 * Mathf.PI);
         return new StateVector(new Vector3(x, z, y) / Constants.DISTANCE_FACTOR, new Vector3(vx, vz, vy) / Constants.DISTANCE_FACTOR, Vector3.zero, time);
     }
+
+    public static float GetHandleSize(Vector3 position, Camera camera, float sizeFactor)
+    {
+        Vector3 cameraPosition = camera.transform.position;
+        Vector3 cameraZDirection = camera.transform.forward;
+
+        float z = (position.x - cameraPosition.x) * cameraZDirection.x +
+                  (position.y - cameraPosition.y) * cameraZDirection.y +
+                  (position.z - cameraPosition.z) * cameraZDirection.z;
+
+        return z * sizeFactor;
+    }
 }

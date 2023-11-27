@@ -40,11 +40,17 @@ public class Body : NetworkBehaviour
         {
             name = "Player (ID: " + Object.InputAuthority.PlayerId.ToString("00") + ")";
         }
+
+        trajectory.transform.parent = null;
+        trajectory.transform.position = Vector3.zero;
+        trajectory.transform.rotation = Quaternion.identity;
+        trajectory.name = name + " - Trajectory";
+        trajectory.body = this;
     }
 
     private void Update()
     {
-        if (!fullyInstantiated && GravityManager.Instance != null)
+        if (!fullyInstantiated && GravityManager.Instance != null && trajectory != null)
         {
             bodySolver.GenerateTrajectory();
             fullyInstantiated = true;
@@ -70,8 +76,6 @@ public class Body : NetworkBehaviour
             Vector3 newUp = Vector3.Cross(originOfMotion, directionOfMotion).normalized;
             Quaternion newRotation = Quaternion.LookRotation(directionOfMotion, newUp);
             transform.rotation = newRotation;
-
-            trajectory.lineRenderer.SetPosition(0, transform.position);
         }
     }
 
@@ -99,7 +103,6 @@ public class Body : NetworkBehaviour
             }
         }
     }
-    
     private static void UpdateStateVector(Changed<Body> changed)
     {
         changed.Behaviour.transform.position = changed.Behaviour.currentStateVector.position;

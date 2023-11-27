@@ -177,6 +177,12 @@
       },
       "url": "https://packages.unity.com"
     },
+    "dk.odico.good-lines": {
+      "version": "file:C:/Users/renan/Downloads/dk.odico.good-lines-1.0.0.tgz",
+      "depth": 0,
+      "source": "local-tarball",
+      "dependencies": {}
+    },
     "com.unity.modules.ai": {
       "version": "1.0.0",
       "depth": 0,
