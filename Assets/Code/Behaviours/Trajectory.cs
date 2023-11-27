@@ -1,4 +1,3 @@
-using System;
 using System.Linq;
 using System.Collections;
 using System.Collections.Generic;
@@ -11,8 +10,10 @@ public class Trajectory : NetworkBehaviour
     public Queue<StateVector> stateVectorQueue;
     public Queue<GameObject> arrowsQueue;
 
-    public GameObject arrowMarker;
-    public LineRenderer lineRenderer;
+    public Body body;
+    public GameObject trajectoryMarkerPrefab;
+    public GameObject arrowMarkerPrefab;
+    public LineMesh lineRenderer;
     public int maxColorSamples = 8;
     public int plotResolution;
     public float arrowApparentSize;
@@ -23,28 +24,71 @@ public class Trajectory : NetworkBehaviour
     public bool isRedrawing;
     public bool needRedraw;
 
+    private GameObject marker;
+
     void Awake()
     {
         stateVectorQueue = new Queue<StateVector>();
         arrowsQueue = new Queue<GameObject>();
-        lineRenderer = GetComponent<LineRenderer>();
+        lineRenderer = GetComponent<LineMesh>();
+        marker = Instantiate(trajectoryMarkerPrefab);
     }
 
-    private void FixedUpdate()
+    private void Update()
     {
-        if (!isRedrawing)
+        if (!isRedrawing && needRedraw) StartCoroutine(RedrawTrajectoryAsync());
+
+        float minDistance = float.PositiveInfinity;
+        StateVector selectedStateVector = new StateVector();
+        Vector2 mousePosition = Input.mousePosition;
+        List<List<Vector3>> worldPositions = lineRenderer.Positions;
+
+        for (int i = 0; i < worldPositions[0].Count - 1; i++)
         {
-            if (needRedraw || lineRenderer.positionCount == 0)
+            Vector2 startPoint = Camera.main.WorldToScreenPoint(worldPositions[0][i]);
+            Vector2 endPoint = Camera.main.WorldToScreenPoint(worldPositions[0][i + 1]);
+            Vector2 lineVector = endPoint - startPoint;
+            Vector2 mouseVector = endPoint - mousePosition;
+            float lerpFactor = Mathf.Clamp(Vector2.Dot(mouseVector, lineVector) / Vector2.Dot(lineVector, lineVector), 0f, 1f);
+            lerpFactor = 1 - lerpFactor;
+            Vector2 _closestPoint = new Vector2(startPoint.x + lerpFactor * (endPoint.x - startPoint.x), startPoint.y + lerpFactor * (endPoint.y - startPoint.y));
+            float distance = Vector2.Distance(mousePosition, _closestPoint);
+            if (distance <= minDistance)
             {
-                StartCoroutine(RedrawTrajectoryAsync());
+                minDistance = distance;
+                selectedStateVector = LerpVector(i, lerpFactor);
             }
         }
+
+        if (minDistance <= Constants.MOUSE_HOVER_SCREEN_DISTANCE)
+        {
+            marker.SetActive(true);
+            marker.transform.position = selectedStateVector.position;
+        }
+        else
+        {
+            marker.SetActive(false);
+        }
+
+        if (worldPositions.Count == 1)
+        {
+            worldPositions.Add(new List<Vector3>());
+            worldPositions[1].Add(body.transform.position);
+            worldPositions[1].Add(worldPositions[0][0]);
+        }
+        else
+        {
+            worldPositions.RemoveAt(1);
+            worldPositions.Add(new List<Vector3>());
+            worldPositions[1].Add(body.transform.position);
+            worldPositions[1].Add(worldPositions[0][0]);
+        }
+        lineRenderer.SetLinesFromPoints(worldPositions);
     }
 
     public void ClearQueue()
     {
         stateVectorQueue.Clear();
-        lineRenderer.positionCount = 0;
     }
 
     public void Enqueue(StateVector newStateVector)
@@ -58,48 +102,10 @@ public class Trajectory : NetworkBehaviour
     {
         StateVector returnVector = stateVectorQueue.Dequeue();
         if (arrowsQueue.Count > 0) Destroy(arrowsQueue.Dequeue());
-        Vector3[] oldPositions = new Vector3[lineRenderer.positionCount];
-        lineRenderer.GetPositions(oldPositions);
-        lineRenderer.SetPositions(oldPositions.Skip(1).ToArray());
+        List<List<Vector3>> oldPositions = lineRenderer.Positions;
+        oldPositions[0].RemoveAt(0);
+        lineRenderer.SetLinesFromPoints(oldPositions);
         return returnVector;
-    }
-
-    IEnumerator RedrawTrajectoryAsync()
-    {
-        isRedrawing = true;
-        StateVector[] stateVectorArray = stateVectorQueue.ToArray();
-        int maxPoints = stateVectorArray.Length;
-
-        foreach (GameObject _ in arrowsQueue.ToArray()) Destroy(arrowsQueue.Dequeue());
-
-        lineRenderer.positionCount = maxPoints;
-        Vector3[] positions = new Vector3[maxPoints];
-        int index = 0;
-        int loopCounter = 0;
-        foreach (StateVector stateVector in stateVectorArray)
-        {
-            positions[index] = stateVector.position;
-            if (stateVector.activeForce.magnitude > 0)
-            {
-                GameObject newArrow = Instantiate(arrowMarker, stateVector.position, Quaternion.LookRotation(stateVector.activeForce.normalized, Vector3.up));
-                newArrow.transform.localScale = new Vector3(arrowApparentSize, arrowApparentSize, arrowApparentSize);
-                arrowsQueue.Enqueue(newArrow);
-            }
-
-            if (loopCounter >= Constants.COROUTINE_LOOP_BATCHSIZE)
-            {
-                loopCounter = 0;
-                yield return new WaitForEndOfFrame();
-            }
-
-            index++;
-            loopCounter++;
-        }
-
-        lineRenderer.SetPositions(positions);
-        isRedrawing = false;
-        needRedraw = false;
-        maxSize = lineRenderer.positionCount;
     }
 
     public bool IsEmpty()
@@ -144,5 +150,61 @@ public class Trajectory : NetworkBehaviour
             result[i] = tempArray[i].acceleration.magnitude;
         }
         return result;
+    }
+
+    public Vector3[] GetPositions()
+    {
+        StateVector[] stateVectors = stateVectorQueue.ToArray();
+        Vector3[] positions = new Vector3[stateVectors.Length];
+        for (int i = 0; i < stateVectors.Length; i++)
+        {
+            positions[i] = stateVectors[i].position;
+        }
+
+        return positions;
+    }
+
+    public StateVector LerpVector(int startIndex, float factor)
+    {
+        StateVector[] stateVectors = stateVectorQueue.ToArray();
+        return StateVector.LerpVector(stateVectors[startIndex], stateVectors[startIndex + 1], factor);
+    }
+
+    IEnumerator RedrawTrajectoryAsync()
+    {
+        isRedrawing = true;
+        StateVector[] stateVectorArray = stateVectorQueue.ToArray();
+        maxSize = stateVectorArray.Length;
+
+        foreach (GameObject _ in arrowsQueue.ToArray()) Destroy(arrowsQueue.Dequeue());
+
+        List<List<Vector3>> positions = new List<List<Vector3>>();
+        positions.Add(new List<Vector3>());
+
+        int index = 0;
+        int loopCounter = 0;
+        foreach (StateVector stateVector in stateVectorArray)
+        {
+            positions[0].Add(stateVector.position - transform.position);
+            if (stateVector.activeForce.magnitude > 0)
+            {
+                GameObject newArrow = Instantiate(arrowMarkerPrefab, stateVector.position, Quaternion.LookRotation(stateVector.activeForce.normalized, Vector3.up));
+                newArrow.transform.localScale = new Vector3(arrowApparentSize, arrowApparentSize, arrowApparentSize);
+                arrowsQueue.Enqueue(newArrow);
+            }
+
+            if (loopCounter >= Constants.COROUTINE_LOOP_BATCHSIZE)
+            {
+                loopCounter = 0;
+                yield return new WaitForEndOfFrame();
+            }
+
+            index++;
+            loopCounter++;
+        }
+
+        lineRenderer.SetLinesFromPoints(positions);
+        isRedrawing = false;
+        needRedraw = false;
     }
 }
