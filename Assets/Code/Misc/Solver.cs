@@ -1,5 +1,6 @@
 using System.Collections;
 using System.Collections.Generic;
+using System;
 using UnityEngine;
 
 public class Solver
@@ -79,5 +80,18 @@ public class Solver
                   (position.z - cameraPosition.z) * cameraZDirection.z;
 
         return z * sizeFactor;
+    }
+
+    public static string FormatTimeSpan(TimeSpan timeSpan)
+    {
+        string sign = (timeSpan.TotalSeconds < 0) ? "-" : "+";
+
+        int days = Mathf.Abs(timeSpan.Days);
+        int hours = Mathf.Abs(timeSpan.Hours);
+        int minutes = Mathf.Abs(timeSpan.Minutes);
+        int seconds = Mathf.Abs(timeSpan.Seconds);
+
+        string formattedTime = $"{sign}{days:D3}:{hours:D2}:{minutes:D2}:{seconds:D2}";
+        return formattedTime;
     }
 }

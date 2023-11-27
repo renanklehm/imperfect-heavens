@@ -24,14 +24,14 @@ public class Trajectory : NetworkBehaviour
     public bool isRedrawing;
     public bool needRedraw;
 
-    private GameObject marker;
+    private MarkerBehaviour marker;
 
     void Awake()
     {
         stateVectorQueue = new Queue<StateVector>();
         arrowsQueue = new Queue<GameObject>();
         lineRenderer = GetComponent<LineMesh>();
-        marker = Instantiate(trajectoryMarkerPrefab);
+        marker = Instantiate(trajectoryMarkerPrefab).GetComponent<MarkerBehaviour>();
     }
 
     private void Update()
@@ -62,12 +62,13 @@ public class Trajectory : NetworkBehaviour
 
         if (minDistance <= Constants.MOUSE_HOVER_SCREEN_DISTANCE)
         {
-            marker.SetActive(true);
+            marker.gameObject.SetActive(true);
             marker.transform.position = selectedStateVector.position;
+            marker.SetTooltip(body.name, selectedStateVector);
         }
         else
         {
-            marker.SetActive(false);
+            marker.gameObject.SetActive(false);
         }
 
         if (worldPositions.Count == 1)
