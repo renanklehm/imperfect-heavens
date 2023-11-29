@@ -119,7 +119,7 @@ MonoBehaviour:
   m_GameObject: {fileID: 693328117053071605}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: ba346bd83c35cc1b486cd7a32c25d855, type: 3}
+  m_Script: {fileID: 11500000, guid: 1b907825164007748a7b894d104fde48, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
 --- !u!114 &1907645139634484134
@@ -141,6 +141,7 @@ MonoBehaviour:
     acceleration: {x: 0, y: 0, z: 0}
     activeForce: {x: 0, y: 0, z: 0}
     timestamp: 0
+  body: {fileID: 0}
   trajectoryMarkerPrefab: {fileID: 5939315176201196477, guid: 800378e099a3fc944b31f90c96a6c236,
     type: 3}
   arrowMarkerPrefab: {fileID: 945068651990442877, guid: dc3f942306547ec4b9cfa7b044036742,
