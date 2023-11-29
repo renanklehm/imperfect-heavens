@@ -2,7 +2,8 @@
 #
 # Get latest from https://github.com/github/gitignore/blob/main/Unity.gitignore
 #
-/[Ll]ibrary/
+/[Ll]ibrary/*
+!/Library/PackageCache/dk.odico.good-lines@80bb3a0a01c3/
 /[Tt]emp/
 /[Oo]bj/
 /[Bb]uild/
