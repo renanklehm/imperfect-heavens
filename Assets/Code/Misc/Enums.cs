@@ -1,4 +1,4 @@
-public enum BurnDirection
+public enum MotionVector
 {
     Prograde = 0,
     Retrograde = 1,

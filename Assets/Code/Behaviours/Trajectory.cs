@@ -36,7 +36,7 @@ public class Trajectory : NetworkBehaviour
 
     private void Update()
     {
-        if (!isRedrawing && needRedraw) StartCoroutine(RedrawTrajectoryAsync());
+        if (!isRedrawing && needRedraw) StartCoroutine(DrawTrajectoryAsync());
 
         float minDistance = float.PositiveInfinity;
         StateVector selectedStateVector = new StateVector();
@@ -62,28 +62,21 @@ public class Trajectory : NetworkBehaviour
 
         if (minDistance <= Constants.MOUSE_HOVER_SCREEN_DISTANCE)
         {
-            marker.gameObject.SetActive(true);
-            marker.transform.position = selectedStateVector.position;
-            marker.SetTooltip(body.name, selectedStateVector);
+            marker.isHovering = true;
+            marker.UpdateMarker(selectedStateVector, body);
         }
         else
         {
-            marker.gameObject.SetActive(false);
+            marker.isHovering = false;
         }
 
-        if (worldPositions.Count == 1)
+
+        worldPositions[0][0] = body.transform.position;
+        if (worldPositions[0].Count < stateVectorQueue.Count)
         {
-            worldPositions.Add(new List<Vector3>());
-            worldPositions[1].Add(body.transform.position);
-            worldPositions[1].Add(worldPositions[0][0]);
+            worldPositions[0][worldPositions[0].Count - 1] = body.transform.position;
         }
-        else
-        {
-            worldPositions.RemoveAt(1);
-            worldPositions.Add(new List<Vector3>());
-            worldPositions[1].Add(body.transform.position);
-            worldPositions[1].Add(worldPositions[0][0]);
-        }
+
         lineRenderer.SetLinesFromPoints(worldPositions);
     }
 
@@ -96,7 +89,7 @@ public class Trajectory : NetworkBehaviour
     {
         stateVectorQueue.Enqueue(newStateVector);
         newestStateVector = newStateVector;
-        StartCoroutine(RedrawTrajectoryAsync());
+        StartCoroutine(DrawTrajectoryAsync());
     }
 
     public StateVector Dequeue()
@@ -104,8 +97,16 @@ public class Trajectory : NetworkBehaviour
         StateVector returnVector = stateVectorQueue.Dequeue();
         if (arrowsQueue.Count > 0) Destroy(arrowsQueue.Dequeue());
         List<List<Vector3>> oldPositions = lineRenderer.Positions;
-        oldPositions[0].RemoveAt(0);
-        lineRenderer.SetLinesFromPoints(oldPositions);
+        if (oldPositions.Count < stateVectorQueue.Count)
+        {
+            StartCoroutine(DrawTrajectoryAsync());
+        }
+        else
+        {
+            oldPositions[0].RemoveAt(0);
+            lineRenderer.SetLinesFromPoints(oldPositions);
+        }
+
         return returnVector;
     }
 
@@ -171,7 +172,7 @@ public class Trajectory : NetworkBehaviour
         return StateVector.LerpVector(stateVectors[startIndex], stateVectors[startIndex + 1], factor);
     }
 
-    IEnumerator RedrawTrajectoryAsync()
+    IEnumerator DrawTrajectoryAsync()
     {
         isRedrawing = true;
         StateVector[] stateVectorArray = stateVectorQueue.ToArray();
@@ -184,8 +185,19 @@ public class Trajectory : NetworkBehaviour
 
         int index = 0;
         int loopCounter = 0;
+        bool breakLoop = false;
         foreach (StateVector stateVector in stateVectorArray)
         {
+            if (breakLoop)
+            {
+                break;
+            }
+
+            if (Vector3.Distance(stateVector.position, stateVectorArray[0].position) <= 0.5f && index != 0)
+            {
+                breakLoop = true;
+            }
+
             positions[0].Add(stateVector.position - transform.position);
             if (stateVector.activeForce.magnitude > 0)
             {

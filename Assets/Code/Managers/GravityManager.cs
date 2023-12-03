@@ -13,7 +13,6 @@ public class GravityManager : NetworkBehaviour
     [Range(0, 1)]
     public float dampFactor = 0.25f;
 
-
     public float timeWarp = 1;
     public SmoothCurve smoothCurve;
     public List<Body> onRailsBodies;
@@ -45,11 +44,36 @@ public class GravityManager : NetworkBehaviour
         if (body.solverType == SolverType.OnRails)
         {
             onRailsBodies.Add(body);
+            float totalMass = 0f;
+            Vector3 tempCenterOfGravity = Vector3.zero;
+            foreach(Body x in onRailsBodies)
+            {
+                totalMass += x.mass;
+                tempCenterOfGravity += body.transform.position * body.mass;
+            }
         }
         else if (body.solverType == SolverType.FreeBody)
         {
             freeBodies.Add(body);
         }
+    }
+
+    public Dictionary<MotionVector, Vector3> GetMotionVectors(Vector3 position, Vector3 velocity, Vector3 acceleration)
+    {
+        Dictionary<MotionVector, Vector3> result = new Dictionary<MotionVector, Vector3>();
+
+        result.Add(MotionVector.Prograde, velocity.normalized);
+
+        Vector3 radialOutPlaneNormal = Vector3.Cross(position - acceleration, result[MotionVector.Prograde]);
+        result.Add(MotionVector.Normal, Vector3.Cross(result[MotionVector.Prograde], radialOutPlaneNormal).normalized);
+        result.Add(MotionVector.RadialOut, Vector3.Cross(result[MotionVector.Prograde], result[MotionVector.Normal]).normalized);
+
+        return result;
+    }
+
+    public Dictionary<MotionVector, Vector3> GetMotionVectors(Body body)
+    {
+        return GetMotionVectors(body.currentStateVector.position, body.currentStateVector.velocity, body.currentStateVector.gravityAcceleration);
     }
 
     public Vector3 GetNetForce(StateVector smallBodyStateVector, float smallBodyMass, float timestamp)
