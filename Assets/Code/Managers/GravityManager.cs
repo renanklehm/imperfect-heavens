@@ -14,7 +14,7 @@ public class GravityManager : NetworkBehaviour
     public float dampFactor = 0.25f;
 
     public float timeWarp = 1;
-    public SmoothCurve smoothCurve;
+    public SmoothCurve dynamicTimestamp;
     public List<Body> onRailsBodies;
     public List<Body> freeBodies;
     public static GravityManager Instance { get; set; }
@@ -28,7 +28,7 @@ public class GravityManager : NetworkBehaviour
         {
             Instance = this;
         }
-        smoothCurve = new SmoothCurve(maxTimestepMultiplier, dampFactor);
+        dynamicTimestamp = new SmoothCurve(maxTimestepMultiplier, dampFactor);
     }
 
     private void FixedUpdate()
@@ -65,8 +65,8 @@ public class GravityManager : NetworkBehaviour
         result.Add(MotionVector.Prograde, velocity.normalized);
 
         Vector3 radialOutPlaneNormal = Vector3.Cross(position - acceleration, result[MotionVector.Prograde]);
-        result.Add(MotionVector.Normal, Vector3.Cross(result[MotionVector.Prograde], radialOutPlaneNormal).normalized);
-        result.Add(MotionVector.RadialOut, Vector3.Cross(result[MotionVector.Prograde], result[MotionVector.Normal]).normalized);
+        result.Add(MotionVector.RadialOut, Vector3.Cross(result[MotionVector.Prograde], radialOutPlaneNormal).normalized);
+        result.Add(MotionVector.Normal, Vector3.Cross(result[MotionVector.Prograde], result[MotionVector.RadialOut]).normalized);
 
         return result;
     }

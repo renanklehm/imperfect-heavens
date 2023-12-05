@@ -164,7 +164,7 @@ public class LineMesh : MonoBehaviour
             return _meshData;
         }
     }
-    // Start is called before the first frame update
+
     void Start()
     {
         if (Positions.Count < 1) {
@@ -174,12 +174,6 @@ public class LineMesh : MonoBehaviour
             Positions[0].Add(new Vector3(0,0,0));
         }
         MeshData.SetLinesFromPoints(Positions);
-    }
-
-    // Update is called once per frame
-    void Update()
-    {
-        
     }
 
     void OnValidate() {

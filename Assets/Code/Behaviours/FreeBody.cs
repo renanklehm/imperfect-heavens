@@ -7,77 +7,62 @@ public class FreeBody : NetworkBehaviour, iBodySolver
 {
     public Body body { get; set; }
 
-    private Vector3 _activeForce;
-    private float burnDuration;
-    private float burnStartTimestamp;
-
     public SolverType solverType { get { return SolverType.FreeBody; } set {} }
 
     private void Awake()
     {
         body = GetComponent<Body>();
-        _activeForce = Vector3.zero;
-    }
-
-    public void AddForce(Vector3 force, float _burnDuration)
-    {
-        _activeForce = force;
-        burnDuration = _burnDuration;
-        burnStartTimestamp = GravityManager.Instance.timestamp;
-        GenerateTrajectory();
     }
 
     public void GetNewPoint()
     {
-        float deltaTime = GravityManager.Instance.smoothCurve.Evaluate(body.trajectory.newestStateVector.acceleration.magnitude);
+        float deltaTime = GravityManager.Instance.dynamicTimestamp.Evaluate(body.trajectory.newestStateVector.acceleration.magnitude);
         deltaTime *= Time.fixedDeltaTime;
-        StateVector newStateVector = Solver.Solve(body.trajectory.newestStateVector, body.mass, deltaTime);
-        body.trajectory.Enqueue(newStateVector);
+        StateVector newStateVector = Solver.Solve(body.trajectory.newestStateVector, body.mass, deltaTime, body.trajectory.newestStateVector.timestamp + deltaTime);
+        body.trajectory.Enqueue(newStateVector, false);
     }
 
     public void GenerateTrajectory()
     {
-        StopAllCoroutines();
-        body.trajectory.isRedrawing = false;
-        StartCoroutine(GenerateTrajectoryAsync());
+        GenerateTrajectory(body.currentStateVector, false);
     }
 
-    IEnumerator GenerateTrajectoryAsync()
+    public void GenerateTrajectory(StateVector initialVector, bool isManeuver)
     {
-        Debug.Log("Generating trajectory for " + name);
+        StopAllCoroutines();
+        body.trajectory.isRedrawing = false;
+        StartCoroutine(GenerateTrajectoryAsync(initialVector, isManeuver));
+    }
 
-        while (body.trajectory.isRedrawing)
-        {
-            yield return new WaitForEndOfFrame();
-        }
-
-        StateVector initialStateVector = new StateVector(body.currentStateVector);
-        body.trajectory.ClearQueue();
-        float scaledDeltaTime = Time.fixedDeltaTime;
-        float totalTime = 0;
-        float lastTimeRecorded = 0;
+    IEnumerator GenerateTrajectoryAsync(StateVector initialStateVector, bool isManeuver)
+    {
+        while (body.trajectory.isRedrawing) yield return new WaitForEndOfFrame();
+        body.trajectory.ClearQueue(isManeuver);
+        float lastTimestamp = 0;
+        float dynamicTimestamp = Time.fixedDeltaTime;
+        float elapsedTime = GravityManager.Instance.timestamp;
+        float maxSimulationTime = elapsedTime + Constants.TRAJECTORY_MAX_TIME_AHEAD;
         int counter = 0;
-        while (totalTime <= Constants.TRAJECTORY_MAX_TIME_AHEAD)
+        while (elapsedTime <= maxSimulationTime)
         {
-            if (totalTime >= burnDuration) _activeForce = Vector3.zero;
-            StateVector newStateVector = Solver.Solve(initialStateVector, body.mass, scaledDeltaTime, _activeForce);
-            if (totalTime - lastTimeRecorded > Constants.TRAJECTORY_TIME_INTERVAL)
+            if (elapsedTime >= initialStateVector.timestamp)
             {
-                body.trajectory.Enqueue(newStateVector);
-                lastTimeRecorded = totalTime;
+                StateVector newStateVector = Solver.Solve(initialStateVector, body.mass, dynamicTimestamp, elapsedTime);
+                if (elapsedTime - lastTimestamp > Constants.TRAJECTORY_TIME_INTERVAL)
+                {
+                    body.trajectory.Enqueue(newStateVector, isManeuver);
+                    lastTimestamp = elapsedTime;
+                }
+                initialStateVector = new StateVector(newStateVector);
+                dynamicTimestamp = Time.fixedDeltaTime * GravityManager.Instance.dynamicTimestamp.Evaluate(newStateVector.acceleration.magnitude);
+                counter++;
+                if (counter >= Constants.COROUTINE_LOOP_BATCHSIZE)
+                {
+                    counter = 0;
+                    yield return new WaitForEndOfFrame();
+                }
             }
-            initialStateVector = new StateVector(newStateVector);
-            totalTime += scaledDeltaTime;
-            float acceleration = newStateVector.acceleration.magnitude;
-            float scaleFactor = GravityManager.Instance.smoothCurve.Evaluate(acceleration);
-            scaledDeltaTime = _activeForce.magnitude > 0 ? Time.fixedDeltaTime : scaleFactor * Time.fixedDeltaTime;
-            counter++;
-            if (counter >= Constants.COROUTINE_LOOP_BATCHSIZE)
-            {
-                counter = 0;
-                yield return new WaitForEndOfFrame();
-            }
+            elapsedTime += dynamicTimestamp;
         }
-        body.trajectory.needRedraw = true;
     }
 }

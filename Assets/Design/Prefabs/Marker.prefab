@@ -313,7 +313,19 @@ MonoBehaviour:
   m_TargetGraphic: {fileID: 3983368552472878134}
   m_OnClick:
     m_PersistentCalls:
-      m_Calls: []
+      m_Calls:
+      - m_Target: {fileID: -8306305797280972938}
+        m_TargetAssemblyTypeName: MarkerBehaviour, Assembly-CSharp
+        m_MethodName: DiscardManeuver
+        m_Mode: 1
+        m_Arguments:
+          m_ObjectArgument: {fileID: 0}
+          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
+          m_IntArgument: 0
+          m_FloatArgument: 0
+          m_StringArgument: 
+          m_BoolArgument: 0
+        m_CallState: 2
 --- !u!1 &897610184681236488
 GameObject:
   m_ObjectHideFlags: 0
@@ -688,7 +700,7 @@ Transform:
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_LocalScale: {x: 0.5, y: 0.5, z: 0.5}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 5357206851580280279}
@@ -2663,7 +2675,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   isPlayerOwned: 0
-  isManeuver: 0
+  isManeuvering: 0
   isHovering: 0
   layerMask:
     serializedVersion: 2
@@ -2683,6 +2695,7 @@ MonoBehaviour:
   faceCamera: {fileID: 3389143772734480016}
   tooltipCanvas: {fileID: 3382337656870053778}
   maneuverCanvas: {fileID: 4695963105146742153}
+  body: {fileID: 0}
   minArrowSize: 0.2
   maxArrowSize: 0.4
   springiness: 0.33
@@ -2693,9 +2706,9 @@ MonoBehaviour:
   exponentialFactor: 5
   maxDeltaV: 10
   thrust: 0
-  deltaV: {x: 0, y: 0, z: 0}
   thrustSlider: {fileID: 2973213686947693756}
   thrustLabel: {fileID: 3137737126778812288}
+  maneuverLabel: {fileID: 8958949781306360671}
   deltaVSliders:
   - {fileID: 878954747081192216}
   - {fileID: 3037296436654138848}
@@ -3689,7 +3702,19 @@ MonoBehaviour:
   m_TargetGraphic: {fileID: 990414891434202082}
   m_OnClick:
     m_PersistentCalls:
-      m_Calls: []
+      m_Calls:
+      - m_Target: {fileID: -8306305797280972938}
+        m_TargetAssemblyTypeName: MarkerBehaviour, Assembly-CSharp
+        m_MethodName: SetManeuver
+        m_Mode: 1
+        m_Arguments:
+          m_ObjectArgument: {fileID: 0}
+          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
+          m_IntArgument: 0
+          m_FloatArgument: 0
+          m_StringArgument: 
+          m_BoolArgument: 0
+        m_CallState: 2
 --- !u!1 &7275795834468570391
 GameObject:
   m_ObjectHideFlags: 0

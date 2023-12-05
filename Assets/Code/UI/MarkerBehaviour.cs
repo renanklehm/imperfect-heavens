@@ -8,7 +8,7 @@ using TMPro;
 public class MarkerBehaviour : MonoBehaviour
 {
     public bool isPlayerOwned;
-    public bool isManeuver;
+    public bool isManeuvering;
     public bool isHovering;
 
     public LayerMask layerMask;
@@ -18,6 +18,7 @@ public class MarkerBehaviour : MonoBehaviour
     public Transform faceCamera;
     public Canvas tooltipCanvas;
     public Canvas maneuverCanvas;
+    public Body body;
 
     //Arrows
     public float minArrowSize = .2f;
@@ -31,21 +32,39 @@ public class MarkerBehaviour : MonoBehaviour
     public TMP_Text tooltipLabel;
 
     //Maneuver Node
+    public Vector3 deltaV {
+        get { return _deltaV; } 
+        set
+        {
+            _deltaV = value;
+            maneuverLabel.text = "delta-v:   " + _deltaV.magnitude.ToString("0.00") + " m/s\n";
+            maneuverLabel.text += "burn time: 0.00 s";
+            StateVector newStateVector = new StateVector(stateVector);
+            newStateVector.velocity += (_deltaV.x / Constants.DISTANCE_FACTOR) * newStateVector.radialOut;
+            newStateVector.velocity += (_deltaV.y / Constants.DISTANCE_FACTOR) * newStateVector.normal;
+            newStateVector.velocity += (_deltaV.z / Constants.DISTANCE_FACTOR) * newStateVector.prograde;
+            body.bodySolver.GenerateTrajectory(newStateVector, true);
+        }
+    }
+    private Vector3 _deltaV;
     public float exponentialFactor = 5f;
     public float maxDeltaV = 10f;
     public float thrust;
-    public Vector3 deltaV;
     public Slider thrustSlider;
     public TMP_Text thrustLabel;
+    public TMP_Text maneuverLabel;
     public Slider[] deltaVSliders;
     public TMP_Text[] deltaVLabels;
     public ArrowHandler[] arrows;
+
+    
 
     private void Start()
     {
         tooltipCanvas.worldCamera = Camera.main;
         maneuverCanvas.worldCamera = Camera.main;
         maneuverCanvas.gameObject.SetActive(false);
+        SetArrowsVisibility(false);
         deltaV = Vector3.zero;
     }
 
@@ -68,17 +87,19 @@ public class MarkerBehaviour : MonoBehaviour
 
         if (isHovering)
         {
-            if (Input.GetMouseButtonDown(0) && isPlayerOwned)
+            if (Input.GetMouseButtonDown(0) && isPlayerOwned && !isManeuvering)
             {
-                isManeuver = true;
+                deltaV = Vector3.zero;
+                isManeuvering = true;
                 maneuverCanvas.gameObject.SetActive(true);
                 tooltipCanvas.gameObject.SetActive(false);
                 SetArrowsVisibility(true);
+                GameManager.Instance.isPlanningManeuver = true;
             }
         }
         else
         {
-            graphics.SetActive(isManeuver);
+            graphics.SetActive(isManeuvering);
         }
 
     }
@@ -104,12 +125,13 @@ public class MarkerBehaviour : MonoBehaviour
         faceCamera.forward = cameraForward;
     }
 
-    public void UpdateMarker(StateVector stateVector, Body body)
+    public void UpdateMarker(StateVector _stateVector, Body body)
     {
-        if (!isManeuver)
+        if (!isManeuvering)
         {
             graphics.SetActive(true);
-            Quaternion targetRotation = Quaternion.LookRotation(stateVector.prograde, stateVector.radialOut);
+            stateVector = _stateVector;
+            Quaternion targetRotation = Quaternion.LookRotation(stateVector.prograde, stateVector.normal);
             transform.rotation = targetRotation;
             transform.position = stateVector.position;
             isPlayerOwned = body.HasInputAuthority;
@@ -129,6 +151,21 @@ public class MarkerBehaviour : MonoBehaviour
         tooltipLabel.text += "relative speed: " + relativeSpeed.ToString("0.00") + "\n";
         tooltipLabel.text += "delta-v to intercept:   " + deltaV.ToString("0.00") + "\n";
         tooltipLabel.text += "burn time to intercept: " + burnTime.ToString("0.00") + "\n";
+    }
+
+    public void SetManeuver()
+    {
+        body.trajectory.SetManeuver();
+        DiscardManeuver();
+    }
+
+    public void DiscardManeuver()
+    {
+        isManeuvering = false;
+        maneuverCanvas.gameObject.SetActive(false);
+        tooltipCanvas.gameObject.SetActive(true);
+        SetArrowsVisibility(false);
+        GameManager.Instance.isPlanningManeuver = false;
     }
 
     public void SetThrust(float value)

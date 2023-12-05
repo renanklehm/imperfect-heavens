@@ -22,7 +22,7 @@ public class ArrowHandler : MonoBehaviour
     {
         transform.localScale = Mathf.Lerp(marker.minArrowSize, marker.maxArrowSize, deltaV / marker.maxDeltaV) * Vector3.one;
 
-        if (Input.GetMouseButtonDown(0))
+        if (Input.GetMouseButtonDown(0) && !GameManager.Instance.isRotatingCamera)
         {
             Ray ray = Camera.main.ScreenPointToRay(Input.mousePosition);
             RaycastHit hit;
@@ -30,6 +30,7 @@ public class ArrowHandler : MonoBehaviour
             if (Physics.Raycast(ray, out hit, Mathf.Infinity, marker.layerMask) && hit.collider.gameObject == gameObject)
             {
                 isDragging = true;
+                GameManager.Instance.isInteractingUI = isDragging;
                 startPointHit = hit.point;
             }
         }
@@ -50,8 +51,10 @@ public class ArrowHandler : MonoBehaviour
         if (Input.GetMouseButtonUp(0))
         {
             isDragging = false;
+            GameManager.Instance.isInteractingUI = isDragging;
             transform.localPosition = startPosition;
             deltaV = 0f;
         }
+        
     }
 }

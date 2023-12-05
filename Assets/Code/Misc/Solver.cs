@@ -5,7 +5,7 @@ using UnityEngine;
 
 public class Solver
 {
-    public static StateVector Solve(StateVector initialStateVector, float mass, float deltaTime, Vector3 activeForce = new Vector3(), float timeStamp = -1f)
+    public static StateVector Solve(StateVector initialStateVector, float mass, float deltaTime, float timeStamp, Vector3 activeForce = new Vector3())
     {
         if (timeStamp == -1f)
         {
@@ -39,8 +39,8 @@ public class Solver
             newVelocity, 
             newAcceleration, 
             motionVectors[MotionVector.Prograde], 
-            motionVectors[MotionVector.RadialOut], 
-            initialStateVector.timestamp + deltaTime,
+            motionVectors[MotionVector.RadialOut],
+            timeStamp,
             newGravityAcceleration,
             activeForce);
     }

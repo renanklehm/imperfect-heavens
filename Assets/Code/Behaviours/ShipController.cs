@@ -47,7 +47,7 @@ public class ShipController : NetworkBehaviour
                     break;
             }
 
-            body.GetComponent<FreeBody>().AddForce(direction * burnStrength, burnDuration);
+            //body.GetComponent<FreeBody>().AddForce(direction * burnStrength, burnDuration);
         }
     }
 

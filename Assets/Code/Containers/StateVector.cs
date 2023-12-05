@@ -46,8 +46,8 @@ public struct StateVector : INetworkStruct
         timestamp = _ticket;
         gravityAcceleration = _passiveForce;
         activeForce = _activeForce;
-        prograde = _prograde;
-        radialOut = _radialOut;
+        prograde = _prograde.normalized;
+        radialOut = _radialOut.normalized;
         normal = Vector3.Cross(prograde, radialOut);
     }
 
@@ -59,8 +59,8 @@ public struct StateVector : INetworkStruct
         timestamp = source.timestamp;
         gravityAcceleration = source.gravityAcceleration;
         activeForce = source.activeForce;
-        prograde = source.prograde;
-        radialOut = source.radialOut;
+        prograde = source.prograde.normalized;
+        radialOut = source.radialOut.normalized;
         normal = source.normal;
     }
 
@@ -78,8 +78,8 @@ public struct StateVector : INetworkStruct
         Vector3 _position = Vector3.Lerp(a.position, b.position, factor);
         Vector3 _velocity = Vector3.Lerp(a.velocity, b.velocity, factor);
         Vector3 _acceleration = Vector3.Lerp(a.acceleration, b.acceleration, factor);
-        Vector3 _prograde = Vector3.Lerp(a.prograde, b.prograde, factor);
-        Vector3 _radialOut = Vector3.Lerp(a.radialOut, b.radialOut, factor);
+        Vector3 _prograde = Vector3.Lerp(a.prograde, b.prograde, factor).normalized;
+        Vector3 _radialOut = Vector3.Lerp(a.radialOut, b.radialOut, factor).normalized;
         float _ticket = Mathf.Lerp(a.timestamp, b.timestamp, factor);
         Vector3 _passiveForce = Vector3.Lerp(a.gravityAcceleration, b.gravityAcceleration, factor);
         Vector3 _activeForce = Vector3.Lerp(a.activeForce, b.activeForce, factor);
