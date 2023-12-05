@@ -16,32 +16,31 @@ public class Spawner : MonoBehaviour, INetworkRunnerCallbacks
     private Dictionary<PlayerRef, NetworkObject> _spawnedCharacters = new Dictionary<PlayerRef, NetworkObject>();
     private NetworkRunner _runner;
 
-    private void OnGUI()
+    private void Start()
     {
-        if (_runner == null)
-        {
-            if (GUI.Button(new Rect(0, 0, 200, 40), "Host"))
-            {
-                StartGame(GameMode.Host);
-            }
-            if (GUI.Button(new Rect(0, 40, 200, 40), "Join"))
-            {
-                StartGame(GameMode.Client);
-            }
-        }
+        StartGame();
     }
 
-    async void StartGame(GameMode mode)
+    async void StartGame()
     {
         _runner = gameObject.AddComponent<NetworkRunner>();
         _runner.ProvideInput = true;
-        await _runner.StartGame(new StartGameArgs()
+
+        StartGameResult result = await _runner.StartGame(new StartGameArgs()
         {
-            GameMode = mode,
-            SessionName = "TestRoom",
+            GameMode = GameMode.AutoHostOrClient,
             Scene = SceneManager.GetActiveScene().buildIndex,
             SceneManager = gameObject.AddComponent<NetworkSceneManagerDefault>()
         });
+
+        if (result.Ok)
+        {
+            Debug.Log("Connected");
+        }
+        else
+        {
+            Debug.LogError("Failed to Start: " + result.ShutdownReason);
+        }
 
         if (_runner.IsServer)
         {

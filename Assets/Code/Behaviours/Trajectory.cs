@@ -8,7 +8,7 @@ public class Trajectory : NetworkBehaviour
 {
     public StateVector newestStateVector;
     public Queue<StateVector> stateVectorQueue;
-    public Queue<GameObject> arrowsQueue;
+    public Queue<StateVector> maneuverQueue;
 
     public Body body;
     public GameObject trajectoryMarkerPrefab;
@@ -29,83 +29,139 @@ public class Trajectory : NetworkBehaviour
     void Awake()
     {
         stateVectorQueue = new Queue<StateVector>();
-        arrowsQueue = new Queue<GameObject>();
+        maneuverQueue = new Queue<StateVector>();
         lineRenderer = GetComponent<LineMesh>();
         marker = Instantiate(trajectoryMarkerPrefab).GetComponent<MarkerBehaviour>();
     }
 
+    private void Start()
+    {
+        marker.body = body;
+    }
+
     private void Update()
     {
-        if (!isRedrawing && needRedraw) StartCoroutine(RedrawTrajectoryAsync());
+        if (!isRedrawing && needRedraw) StartCoroutine(DrawTrajectoryAsync());
 
         float minDistance = float.PositiveInfinity;
         StateVector selectedStateVector = new StateVector();
         Vector2 mousePosition = Input.mousePosition;
-        List<List<Vector3>> worldPositions = lineRenderer.Positions;
+        List<List<Vector3>> renderedPositions = lineRenderer.Positions;
 
-        for (int i = 0; i < worldPositions[0].Count - 1; i++)
+        if (!GameManager.Instance.isPlanningManeuver && !GameManager.Instance.isRotatingCamera)
         {
-            Vector2 startPoint = Camera.main.WorldToScreenPoint(worldPositions[0][i]);
-            Vector2 endPoint = Camera.main.WorldToScreenPoint(worldPositions[0][i + 1]);
-            Vector2 lineVector = endPoint - startPoint;
-            Vector2 mouseVector = endPoint - mousePosition;
-            float lerpFactor = Mathf.Clamp(Vector2.Dot(mouseVector, lineVector) / Vector2.Dot(lineVector, lineVector), 0f, 1f);
-            lerpFactor = 1 - lerpFactor;
-            Vector2 _closestPoint = new Vector2(startPoint.x + lerpFactor * (endPoint.x - startPoint.x), startPoint.y + lerpFactor * (endPoint.y - startPoint.y));
-            float distance = Vector2.Distance(mousePosition, _closestPoint);
-            if (distance <= minDistance)
+            for (int i = 0; i < renderedPositions[0].Count - 1; i++)
             {
-                minDistance = distance;
-                selectedStateVector = LerpVector(i, lerpFactor);
+                Vector2 startPoint = Camera.main.WorldToScreenPoint(renderedPositions[0][i]);
+                Vector2 endPoint = Camera.main.WorldToScreenPoint(renderedPositions[0][i + 1]);
+                Vector2 lineVector = endPoint - startPoint;
+                Vector2 mouseVector = endPoint - mousePosition;
+                float lerpFactor = Mathf.Clamp(Vector2.Dot(mouseVector, lineVector) / Vector2.Dot(lineVector, lineVector), 0f, 1f);
+                lerpFactor = 1 - lerpFactor;
+                Vector2 _closestPoint = new Vector2(startPoint.x + lerpFactor * (endPoint.x - startPoint.x), startPoint.y + lerpFactor * (endPoint.y - startPoint.y));
+                float distance = Vector2.Distance(mousePosition, _closestPoint);
+                if (distance <= minDistance)
+                {
+                    minDistance = distance;
+                    selectedStateVector = LerpVector(i, lerpFactor);
+                }
+            }
+
+            if (minDistance <= Constants.MOUSE_HOVER_SCREEN_DISTANCE)
+            {
+                marker.isHovering = true;
+                marker.UpdateMarker(selectedStateVector, body);
+            }
+            else
+            {
+                marker.isHovering = false;
             }
         }
 
-        if (minDistance <= Constants.MOUSE_HOVER_SCREEN_DISTANCE)
+        renderedPositions[0][0] = body.transform.position;
+        if (renderedPositions[0].Count < stateVectorQueue.Count)
         {
-            marker.gameObject.SetActive(true);
-            marker.transform.position = selectedStateVector.position;
-            marker.SetTooltip(body.name, selectedStateVector);
-        }
-        else
-        {
-            marker.gameObject.SetActive(false);
+            renderedPositions[0][renderedPositions[0].Count - 1] = body.transform.position;
         }
 
-        if (worldPositions.Count == 1)
-        {
-            worldPositions.Add(new List<Vector3>());
-            worldPositions[1].Add(body.transform.position);
-            worldPositions[1].Add(worldPositions[0][0]);
-        }
-        else
-        {
-            worldPositions.RemoveAt(1);
-            worldPositions.Add(new List<Vector3>());
-            worldPositions[1].Add(body.transform.position);
-            worldPositions[1].Add(worldPositions[0][0]);
-        }
-        lineRenderer.SetLinesFromPoints(worldPositions);
+        lineRenderer.SetLinesFromPoints(renderedPositions);
     }
 
-    public void ClearQueue()
+    public void SetManeuver()
     {
+        StateVector[] stateVectors = stateVectorQueue.ToArray();
+        StateVector[] maneuvers = maneuverQueue.ToArray();
         stateVectorQueue.Clear();
+        maneuverQueue.Clear();
+        var test = new List<List<Vector3>>();
+        test.Add(new List<Vector3>());
+        test[0].Add(Vector3.zero);
+        test[0].Add(Vector3.zero);
+        test.Add(new List<Vector3>());
+        test[1].Add(Vector3.zero);
+        test[1].Add(Vector3.zero);
+        lineRenderer.SetLinesFromPoints(test);
+
+        foreach (StateVector originalVector in stateVectors)
+        {
+            if (originalVector.timestamp < maneuvers[0].timestamp)
+            {
+                Enqueue(originalVector, false);
+            }
+            else
+            {
+                foreach (StateVector newVector in maneuvers)
+                {
+                    Enqueue(newVector, false);
+                }
+                break;
+            }
+        }
+
+        StartCoroutine(DrawTrajectoryAsync());
     }
 
-    public void Enqueue(StateVector newStateVector)
+    public void ClearQueue(bool isManeuver)
     {
-        stateVectorQueue.Enqueue(newStateVector);
-        newestStateVector = newStateVector;
-        StartCoroutine(RedrawTrajectoryAsync());
+        if (isManeuver)
+        {
+            maneuverQueue.Clear();
+        }
+        else
+        {
+            stateVectorQueue.Clear();
+        }
+    }
+
+    public void Enqueue(StateVector newStateVector, bool isManeuver)
+    {
+        if (isManeuver)
+        {
+            maneuverQueue.Enqueue(newStateVector);
+        }
+        else
+        {
+            stateVectorQueue.Enqueue(newStateVector);
+            newestStateVector = newStateVector;
+        }
+        needRedraw = true;
     }
 
     public StateVector Dequeue()
     {
         StateVector returnVector = stateVectorQueue.Dequeue();
-        if (arrowsQueue.Count > 0) Destroy(arrowsQueue.Dequeue());
+
         List<List<Vector3>> oldPositions = lineRenderer.Positions;
-        oldPositions[0].RemoveAt(0);
-        lineRenderer.SetLinesFromPoints(oldPositions);
+        if (oldPositions.Count < stateVectorQueue.Count)
+        {
+            StartCoroutine(DrawTrajectoryAsync());
+        }
+        else
+        {
+            oldPositions[0].RemoveAt(0);
+            lineRenderer.SetLinesFromPoints(oldPositions);
+        }
+
         return returnVector;
     }
 
@@ -171,29 +227,23 @@ public class Trajectory : NetworkBehaviour
         return StateVector.LerpVector(stateVectors[startIndex], stateVectors[startIndex + 1], factor);
     }
 
-    IEnumerator RedrawTrajectoryAsync()
+    IEnumerator DrawTrajectoryAsync()
     {
         isRedrawing = true;
+        List<List<Vector3>> trajectoryPositions = new List<List<Vector3>>();
+        trajectoryPositions.Add(new List<Vector3>());
+
         StateVector[] stateVectorArray = stateVectorQueue.ToArray();
         maxSize = stateVectorArray.Length;
-
-        foreach (GameObject _ in arrowsQueue.ToArray()) Destroy(arrowsQueue.Dequeue());
-
-        List<List<Vector3>> positions = new List<List<Vector3>>();
-        positions.Add(new List<Vector3>());
-
         int index = 0;
         int loopCounter = 0;
+        bool breakLoop = false;
         foreach (StateVector stateVector in stateVectorArray)
         {
-            positions[0].Add(stateVector.position - transform.position);
-            if (stateVector.activeForce.magnitude > 0)
-            {
-                GameObject newArrow = Instantiate(arrowMarkerPrefab, stateVector.position, Quaternion.LookRotation(stateVector.activeForce.normalized, Vector3.up));
-                newArrow.transform.localScale = new Vector3(arrowApparentSize, arrowApparentSize, arrowApparentSize);
-                arrowsQueue.Enqueue(newArrow);
-            }
+            if (breakLoop) break;
+            if (Vector3.Distance(stateVector.position, stateVectorArray[0].position) <= 0.5f && index != 0) breakLoop = true;
 
+            trajectoryPositions[0].Add(stateVector.position - transform.position);
             if (loopCounter >= Constants.COROUTINE_LOOP_BATCHSIZE)
             {
                 loopCounter = 0;
@@ -204,7 +254,32 @@ public class Trajectory : NetworkBehaviour
             loopCounter++;
         }
 
-        lineRenderer.SetLinesFromPoints(positions);
+
+        if (maneuverQueue.Count > 0)
+        {
+            trajectoryPositions.Add(new List<Vector3>());
+            stateVectorArray = maneuverQueue.ToArray();
+            index = 0;
+            loopCounter = 0;
+            breakLoop = false;
+            foreach (StateVector stateVector in stateVectorArray)
+            {
+                if (breakLoop) break;
+                if (Vector3.Distance(stateVector.position, stateVectorArray[0].position) <= 0.5f && index != 0) breakLoop = true;
+
+                trajectoryPositions[1].Add(stateVector.position - transform.position);
+                if (loopCounter >= Constants.COROUTINE_LOOP_BATCHSIZE)
+                {
+                    loopCounter = 0;
+                    yield return new WaitForEndOfFrame();
+                }
+
+                index++;
+                loopCounter++;
+            }
+        }
+
+        lineRenderer.SetLinesFromPoints(trajectoryPositions);
         isRedrawing = false;
         needRedraw = false;
     }

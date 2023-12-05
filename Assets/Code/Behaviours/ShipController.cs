@@ -16,7 +16,7 @@ public class ShipController : NetworkBehaviour
     }
 
     [Rpc(RpcSources.InputAuthority, RpcTargets.All)]
-    public void RPC_AddManeuver(BurnDirection burnDirection, float burnStrength, float burnDuration, PlayerRef playerRef)
+    public void RPC_AddManeuver(MotionVector burnDirection, float burnStrength, float burnDuration, PlayerRef playerRef)
     {
         if (body.Object.InputAuthority == playerRef)
         {
@@ -24,22 +24,22 @@ public class ShipController : NetworkBehaviour
 
             switch (burnDirection)
             {
-                case BurnDirection.Prograde:
+                case MotionVector.Prograde:
                     direction = transform.forward;
                     break;
-                case BurnDirection.Retrograde:
+                case MotionVector.Retrograde:
                     direction = -transform.forward;
                     break;
-                case BurnDirection.Normal:
+                case MotionVector.Normal:
                     direction = transform.up;
                     break;
-                case BurnDirection.AntiNormal:
+                case MotionVector.AntiNormal:
                     direction = -transform.up;
                     break;
-                case BurnDirection.RadialOut:
+                case MotionVector.RadialOut:
                     direction = transform.right;
                     break;
-                case BurnDirection.RadialIn:
+                case MotionVector.RadialIn:
                     direction = -transform.right;
                     break;
                 default:
@@ -47,7 +47,7 @@ public class ShipController : NetworkBehaviour
                     break;
             }
 
-            body.GetComponent<FreeBody>().AddForce(direction * burnStrength, burnDuration);
+            //body.GetComponent<FreeBody>().AddForce(direction * burnStrength, burnDuration);
         }
     }
 

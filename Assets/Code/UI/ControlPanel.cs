@@ -44,7 +44,7 @@ public class ControlPanel : MonoBehaviour
 
     public void AddThrust(int _direction)
     {
-        shipController.RPC_AddManeuver((BurnDirection)_direction, burnStrength, burnDuration, shipController.Object.InputAuthority);
+        shipController.RPC_AddManeuver((MotionVector)_direction, burnStrength, burnDuration, shipController.Object.InputAuthority);
     }
 
     IEnumerator FindShipController()

@@ -5,7 +5,7 @@ using UnityEngine;
 
 public class Solver
 {
-    public static StateVector Solve(StateVector initialStateVector, float mass, float deltaTime, Vector3 activeForce = new Vector3(), float timeStamp = -1f)
+    public static StateVector Solve(StateVector initialStateVector, float mass, float deltaTime, float timeStamp, Vector3 activeForce = new Vector3())
     {
         if (timeStamp == -1f)
         {
@@ -27,47 +27,71 @@ public class Solver
 
     private static StateVector EulerMethod(StateVector initialStateVector, float mass, float deltaTime, float timeStamp, Vector3 activeForce)
     {
-        Vector3 currentNetForce = GravityManager.Instance.GetNetForce(initialStateVector, mass, timeStamp) + activeForce;
-        Vector3 newAcceleration = currentNetForce / mass;
+        Vector3 currentNetForce = GravityManager.Instance.GetNetForce(initialStateVector, mass, timeStamp);
+        Vector3 newGravityAcceleration = currentNetForce / mass;
+        Vector3 newAcceleration = newGravityAcceleration + (activeForce / mass);
         Vector3 newVelocity = initialStateVector.velocity + (newAcceleration * deltaTime) / Constants.DISTANCE_FACTOR;
         Vector3 newPosition = initialStateVector.position + newVelocity * deltaTime;
+        var motionVectors = GravityManager.Instance.GetMotionVectors(newPosition, newVelocity, newGravityAcceleration);
 
-        return new StateVector(newPosition, newVelocity, newAcceleration, initialStateVector.timestamp + deltaTime, activeForce);
+        return new StateVector(
+            newPosition, 
+            newVelocity, 
+            newAcceleration, 
+            motionVectors[MotionVector.Prograde], 
+            motionVectors[MotionVector.RadialOut],
+            timeStamp,
+            newGravityAcceleration,
+            activeForce);
     }
 
     private static StateVector KepplerEquation(float eccentricAnomaly, float semiLatusRectum, float mass, OrbitalParameters orbitalParameters)
     {
-        float meanAnomaly = eccentricAnomaly - orbitalParameters.eccentricity * Mathf.Sin(eccentricAnomaly);
+        float[] time = new float[3];
 
-        float trueAnomaly = 
-            2 * Mathf.Atan2(Mathf.Sqrt(1 + orbitalParameters.eccentricity) * Mathf.Sin(eccentricAnomaly / 2), Mathf.Sqrt(1 - orbitalParameters.eccentricity) * 
-            Mathf.Cos(eccentricAnomaly / 2));
-        float radius = semiLatusRectum / (1 + orbitalParameters.eccentricity * Mathf.Cos(trueAnomaly));
+        Vector3[] positions = new Vector3[3];
+        Vector3[] velocities = new Vector3[3];
+        Vector3 acceleration;
 
-        float x =
-            radius * (
-            Mathf.Cos(trueAnomaly + orbitalParameters.argumentPeriapsis * Constants.DEG2RAD) *
-            Mathf.Cos(orbitalParameters.longAscNode * Constants.DEG2RAD) - Mathf.Sin(trueAnomaly + orbitalParameters.argumentPeriapsis * Constants.DEG2RAD) *
-            Mathf.Sin(orbitalParameters.longAscNode * Constants.DEG2RAD) * Mathf.Cos(orbitalParameters.inclination * Constants.DEG2RAD)
-            );
-        float y =
-            radius * (
-            Mathf.Cos(trueAnomaly + orbitalParameters.argumentPeriapsis * Constants.DEG2RAD) *
-            Mathf.Sin(orbitalParameters.longAscNode * Constants.DEG2RAD) + Mathf.Sin(trueAnomaly + orbitalParameters.argumentPeriapsis * Constants.DEG2RAD) *
-            Mathf.Cos(orbitalParameters.longAscNode * Constants.DEG2RAD) * Mathf.Cos(orbitalParameters.inclination * Constants.DEG2RAD)
-            );
-        float z =
-            radius *
-            Mathf.Sin(trueAnomaly + orbitalParameters.argumentPeriapsis * Constants.DEG2RAD) * Mathf.Sin(orbitalParameters.inclination * Constants.DEG2RAD);
+        for (int i = 0; i < 3; i++)
+        {
 
-        float speed = Mathf.Sqrt(Constants.GRAVITATIONAL_CONSTANT * mass * (2 / radius - 1 / (orbitalParameters.semiMajorAxis * Constants.DISTANCE_FACTOR)));
-        float vx = -speed * Mathf.Sin(trueAnomaly + orbitalParameters.argumentPeriapsis * Constants.DEG2RAD);
-        float vy = speed * (orbitalParameters.eccentricity + Mathf.Cos(trueAnomaly + orbitalParameters.argumentPeriapsis * Constants.DEG2RAD));
-        float vz = 0f;
+            float localEccentricAnomaly = eccentricAnomaly + (i * 1e-6f);
+            float meanAnomaly = localEccentricAnomaly - orbitalParameters.eccentricity * Mathf.Sin(localEccentricAnomaly);
+            float trueAnomaly =
+                2 * Mathf.Atan2(Mathf.Sqrt(1 + orbitalParameters.eccentricity) * Mathf.Sin(localEccentricAnomaly / 2), Mathf.Sqrt(1 - orbitalParameters.eccentricity) *
+                Mathf.Cos(localEccentricAnomaly / 2));
 
-        float orbitalPeriod = 2 * Mathf.PI * Mathf.Sqrt(Mathf.Pow(orbitalParameters.semiMajorAxis * Constants.DISTANCE_FACTOR, 3) / (Constants.GRAVITATIONAL_CONSTANT * mass));
-        float time = meanAnomaly * orbitalPeriod / (2 * Mathf.PI);
-        return new StateVector(new Vector3(x, z, y) / Constants.DISTANCE_FACTOR, new Vector3(vx, vz, vy) / Constants.DISTANCE_FACTOR, Vector3.zero, time);
+            float radius = semiLatusRectum / (1 + orbitalParameters.eccentricity * Mathf.Cos(trueAnomaly));
+
+            float x =
+                radius * (
+                Mathf.Cos(trueAnomaly + orbitalParameters.argumentPeriapsis * Constants.DEG2RAD) *
+                Mathf.Cos(orbitalParameters.longAscNode * Constants.DEG2RAD) - Mathf.Sin(trueAnomaly + orbitalParameters.argumentPeriapsis * Constants.DEG2RAD) *
+                Mathf.Sin(orbitalParameters.longAscNode * Constants.DEG2RAD) * Mathf.Cos(orbitalParameters.inclination * Constants.DEG2RAD)
+                );
+            float y =
+                radius * (
+                Mathf.Cos(trueAnomaly + orbitalParameters.argumentPeriapsis * Constants.DEG2RAD) *
+                Mathf.Sin(orbitalParameters.longAscNode * Constants.DEG2RAD) + Mathf.Sin(trueAnomaly + orbitalParameters.argumentPeriapsis * Constants.DEG2RAD) *
+                Mathf.Cos(orbitalParameters.longAscNode * Constants.DEG2RAD) * Mathf.Cos(orbitalParameters.inclination * Constants.DEG2RAD)
+                );
+            float z =
+                radius *
+                Mathf.Sin(trueAnomaly + orbitalParameters.argumentPeriapsis * Constants.DEG2RAD) * Mathf.Sin(orbitalParameters.inclination * Constants.DEG2RAD);
+
+            float orbitalPeriod = 2 * Mathf.PI * Mathf.Sqrt(Mathf.Pow(orbitalParameters.semiMajorAxis * Constants.DISTANCE_FACTOR, 3) / (Constants.GRAVITATIONAL_CONSTANT * mass));
+            time[i] = meanAnomaly * orbitalPeriod / (2 * Mathf.PI);
+            positions[i] = new Vector3(x, z, y) / Constants.DISTANCE_FACTOR;
+        }
+
+        velocities[0] = positions[1] - positions[0];
+        velocities[1] = positions[2] - positions[1];
+        acceleration = velocities[1] - velocities[0];
+
+        var motionVector = GravityManager.Instance.GetMotionVectors(positions[0], velocities[0], acceleration);
+
+        return new StateVector(positions[0], velocities[0], Vector3.zero, motionVector[MotionVector.Prograde], motionVector[MotionVector.RadialOut], time[0], acceleration);
     }
 
     public static float GetHandleSize(Vector3 position, Camera camera, float sizeFactor)

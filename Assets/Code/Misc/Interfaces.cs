@@ -14,4 +14,9 @@ public interface iBodySolver
     {
         throw new Exception("Not implemented");
     }
+
+    public void GenerateTrajectory(StateVector initialVector, bool isManeuver)
+    {
+        throw new Exception("Not implemented");
+    }
 }

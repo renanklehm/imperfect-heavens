@@ -28,11 +28,15 @@ public class Body : NetworkBehaviour
     {
         if (HasStateAuthority)
         {
+            var motionVectors = GravityManager.Instance.GetMotionVectors(transform.position, initialVelocity, Vector3.zero);
             currentStateVector = new StateVector(
                 transform.position,
                 initialVelocity,
                 Vector3.zero,
-                GravityManager.Instance.timestamp
+                motionVectors[MotionVector.Prograde],
+                motionVectors[MotionVector.RadialOut],
+                GravityManager.Instance.timestamp,
+                Vector3.zero
             );
         }
 
