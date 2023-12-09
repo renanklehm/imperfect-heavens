@@ -11,8 +11,6 @@ public class Trajectory : NetworkBehaviour
     public Queue<StateVector> maneuverQueue;
 
     public Body body;
-    public GameObject trajectoryMarkerPrefab;
-    public GameObject arrowMarkerPrefab;
     public LineMesh lineRenderer;
     public int maxColorSamples = 8;
     public int plotResolution;
@@ -24,60 +22,18 @@ public class Trajectory : NetworkBehaviour
     public bool isRedrawing;
     public bool needRedraw;
 
-    private MarkerBehaviour marker;
-
     void Awake()
     {
         stateVectorQueue = new Queue<StateVector>();
         maneuverQueue = new Queue<StateVector>();
         lineRenderer = GetComponent<LineMesh>();
-        marker = Instantiate(trajectoryMarkerPrefab).GetComponent<MarkerBehaviour>();
-    }
-
-    private void Start()
-    {
-        marker.body = body;
     }
 
     private void Update()
     {
         if (!isRedrawing && needRedraw) StartCoroutine(DrawTrajectoryAsync());
 
-        float minDistance = float.PositiveInfinity;
-        StateVector selectedStateVector = new StateVector();
-        Vector2 mousePosition = Input.mousePosition;
         List<List<Vector3>> renderedPositions = lineRenderer.Positions;
-
-        if (!GameManager.Instance.isPlanningManeuver && !GameManager.Instance.isRotatingCamera)
-        {
-            for (int i = 0; i < renderedPositions[0].Count - 1; i++)
-            {
-                Vector2 startPoint = Camera.main.WorldToScreenPoint(renderedPositions[0][i]);
-                Vector2 endPoint = Camera.main.WorldToScreenPoint(renderedPositions[0][i + 1]);
-                Vector2 lineVector = endPoint - startPoint;
-                Vector2 mouseVector = endPoint - mousePosition;
-                float lerpFactor = Mathf.Clamp(Vector2.Dot(mouseVector, lineVector) / Vector2.Dot(lineVector, lineVector), 0f, 1f);
-                lerpFactor = 1 - lerpFactor;
-                Vector2 _closestPoint = new Vector2(startPoint.x + lerpFactor * (endPoint.x - startPoint.x), startPoint.y + lerpFactor * (endPoint.y - startPoint.y));
-                float distance = Vector2.Distance(mousePosition, _closestPoint);
-                if (distance <= minDistance)
-                {
-                    minDistance = distance;
-                    selectedStateVector = LerpVector(i, lerpFactor);
-                }
-            }
-
-            if (minDistance <= Constants.MOUSE_HOVER_SCREEN_DISTANCE)
-            {
-                marker.isHovering = true;
-                marker.UpdateMarker(selectedStateVector, body);
-            }
-            else
-            {
-                marker.isHovering = false;
-            }
-        }
-
         renderedPositions[0][0] = body.transform.position;
         if (renderedPositions[0].Count < stateVectorQueue.Count)
         {
@@ -219,12 +175,6 @@ public class Trajectory : NetworkBehaviour
         }
 
         return positions;
-    }
-
-    public StateVector LerpVector(int startIndex, float factor)
-    {
-        StateVector[] stateVectors = stateVectorQueue.ToArray();
-        return StateVector.LerpVector(stateVectors[startIndex], stateVectors[startIndex + 1], factor);
     }
 
     IEnumerator DrawTrajectoryAsync()

@@ -18,7 +18,7 @@ public class MarkerBehaviour : MonoBehaviour
     public Transform faceCamera;
     public Canvas tooltipCanvas;
     public Canvas maneuverCanvas;
-    public Body body;
+    public ShipController shipController;
 
     //Arrows
     public float minArrowSize = .2f;
@@ -43,7 +43,7 @@ public class MarkerBehaviour : MonoBehaviour
             newStateVector.velocity += (_deltaV.x / Constants.DISTANCE_FACTOR) * newStateVector.radialOut;
             newStateVector.velocity += (_deltaV.y / Constants.DISTANCE_FACTOR) * newStateVector.normal;
             newStateVector.velocity += (_deltaV.z / Constants.DISTANCE_FACTOR) * newStateVector.prograde;
-            body.bodySolver.GenerateTrajectory(newStateVector, true);
+            shipController.body.bodySolver.GenerateTrajectory(newStateVector, true);
         }
     }
     private Vector3 _deltaV;
@@ -56,8 +56,6 @@ public class MarkerBehaviour : MonoBehaviour
     public Slider[] deltaVSliders;
     public TMP_Text[] deltaVLabels;
     public ArrowHandler[] arrows;
-
-    
 
     private void Start()
     {
@@ -72,6 +70,7 @@ public class MarkerBehaviour : MonoBehaviour
     {
         HandleSize();
         FaceCamera();
+        HandleMarkerPosition();
 
         foreach (ArrowHandler x in arrows)
         {
@@ -112,6 +111,48 @@ public class MarkerBehaviour : MonoBehaviour
         }
     }
 
+    private void HandleMarkerPosition()
+    {
+        float minDistance = float.PositiveInfinity;
+        StateVector selectedStateVector = new StateVector();
+        Vector2 mousePosition = Input.mousePosition;
+
+        foreach (Trajectory trajectory in FindObjectsOfType<Trajectory>())
+        {
+            if (!GameManager.Instance.isPlanningManeuver && !GameManager.Instance.isRotatingCamera)
+            {
+                List<List<Vector3>> renderedPositions = trajectory.lineRenderer.Positions;
+                for (int i = 0; i < renderedPositions[0].Count - 1; i++)
+                {
+                    Vector2 startPoint = Camera.main.WorldToScreenPoint(renderedPositions[0][i]);
+                    Vector2 endPoint = Camera.main.WorldToScreenPoint(renderedPositions[0][i + 1]);
+                    Vector2 lineVector = endPoint - startPoint;
+                    Vector2 mouseVector = endPoint - mousePosition;
+                    float lerpFactor = Mathf.Clamp(Vector2.Dot(mouseVector, lineVector) / Vector2.Dot(lineVector, lineVector), 0f, 1f);
+                    lerpFactor = 1 - lerpFactor;
+                    Vector2 _closestPoint = new Vector2(startPoint.x + lerpFactor * (endPoint.x - startPoint.x), startPoint.y + lerpFactor * (endPoint.y - startPoint.y));
+                    float distance = Vector2.Distance(mousePosition, _closestPoint);
+                    if (distance <= minDistance)
+                    {
+                        minDistance = distance;
+                        selectedStateVector = LerpVector(i, lerpFactor, trajectory.stateVectorQueue);
+                    }
+                }
+
+                if (minDistance <= Constants.MOUSE_HOVER_SCREEN_DISTANCE)
+                {
+                    isHovering = true;
+                    UpdateMarker(selectedStateVector, trajectory.body);
+                    break;
+                }
+                else
+                {
+                    isHovering = false;
+                }
+            }
+        }
+    }
+
     private void HandleSize()
     {
         float newSize = Solver.GetHandleSize(transform.position, Camera.main, sizeFactor);
@@ -123,6 +164,12 @@ public class MarkerBehaviour : MonoBehaviour
         Vector3 cameraForward = -Camera.main.transform.forward;
         cameraForward.y = 0f;
         faceCamera.forward = cameraForward;
+    }
+
+    private StateVector LerpVector(int startIndex, float factor, Queue<StateVector> stateVectorQueue)
+    {
+        StateVector[] stateVectors = stateVectorQueue.ToArray();
+        return StateVector.LerpVector(stateVectors[startIndex], stateVectors[startIndex + 1], factor);
     }
 
     public void UpdateMarker(StateVector _stateVector, Body body)
@@ -155,7 +202,7 @@ public class MarkerBehaviour : MonoBehaviour
 
     public void SetManeuver()
     {
-        body.trajectory.SetManeuver();
+        shipController.body.trajectory.SetManeuver();
         DiscardManeuver();
     }
 

@@ -34,3 +34,12 @@ public enum TrajectoryRedrawMode
     Update,
     NoRedraw
 }
+
+public enum FuelType
+{
+    LH2,
+    HydroLox,
+    Methalox,
+    Kerolox,
+    Hydrazine,
+}
