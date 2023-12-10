@@ -108,6 +108,13 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   _interpolationDataSource: 0
+  solverType: 1
+  initialVelocity: {x: 0, y: 0, z: 0}
+  mass: 10000
+  isStationaryRelativeToParent: 0
+  fullyInstantiated: 0
+  mainTrajectory: {fileID: 0}
+  maneuverTrajectory: {fileID: 0}
   _currentStateVector:
     position: {x: 0, y: 0, z: 0}
     velocity: {x: 0, y: 0, z: 0}
@@ -118,12 +125,6 @@ MonoBehaviour:
     gravityAcceleration: {x: 0, y: 0, z: 0}
     activeForce: {x: 0, y: 0, z: 0}
     timestamp: 0
-  trajectory: {fileID: 5027326803988911018}
-  mass: 10000
-  solverType: 1
-  isStationaryRelativeToParent: 0
-  initialVelocity: {x: 0, y: 0, z: 0}
-  fullyInstantiated: 0
 --- !u!114 &7610428414282007543
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -137,6 +138,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   _interpolationDataSource: 0
+  isRunningCoroutine: 0
 --- !u!114 &1790497414016018411
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -150,14 +152,13 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   _interpolationDataSource: 0
-  body: {fileID: 0}
   fuelTanks:
-  - {fileID: 11400000, guid: f6a30a0d00c18e84a9a409fad6a7277a, type: 2}
   - {fileID: 11400000, guid: f6a30a0d00c18e84a9a409fad6a7277a, type: 2}
   engines:
   - {fileID: 11400000, guid: 42b89871993e923469cf27f393208cac, type: 2}
   - {fileID: 11400000, guid: 42b89871993e923469cf27f393208cac, type: 2}
   - {fileID: 11400000, guid: 42b89871993e923469cf27f393208cac, type: 2}
+  body: {fileID: 0}
 --- !u!1 &6473343030877880774
 GameObject:
   m_ObjectHideFlags: 0
@@ -685,18 +686,6 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: -1552182283, guid: e725a070cec140c4caffb81624c8c787, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
---- !u!114 &5027326803988911018 stripped
-MonoBehaviour:
-  m_CorrespondingSourceObject: {fileID: 1907645139634484134, guid: 88cb8218f8dc6504ea6aacde5b3cc03e,
-    type: 3}
-  m_PrefabInstance: {fileID: 6898940899228049420}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 0}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 6e0f7462191a0b1428fcf05beefbd9d9, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
 --- !u!4 &8886164802373696420 stripped

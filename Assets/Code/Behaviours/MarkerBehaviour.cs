@@ -36,9 +36,13 @@ public class MarkerBehaviour : MonoBehaviour
         get { return _deltaV; } 
         set
         {
-            _deltaV = value;
-            maneuverLabel.text = "delta-v:   " + _deltaV.magnitude.ToString("0.00") + " m/s\n";
-            maneuverLabel.text += "burn time: 0.00 s";
+            var burnSimulation = shipController.SimulateBurn(1, value.magnitude);
+            maneuverLabel.text = "";
+            maneuverLabel.text += "burn duration:    " + burnSimulation["burnDuration"].ToString("0.00") + "s\n";
+            maneuverLabel.text += "delta-v:          " + burnSimulation["deltaV"].ToString("0.00") + " m/s\n";
+            maneuverLabel.text += "fuel consumption: " + burnSimulation["fuelConsumption"].ToString("0.00") + " kg\n";
+            maneuverLabel.text += "remaining fuel:   " + burnSimulation["remainingFuelMass"].ToString("0.00") + " kg\n";
+            _deltaV = value.normalized * burnSimulation["deltaV"];
             StateVector newStateVector = new StateVector(stateVector);
             newStateVector.velocity += (_deltaV.x / Constants.DISTANCE_FACTOR) * newStateVector.radialOut;
             newStateVector.velocity += (_deltaV.y / Constants.DISTANCE_FACTOR) * newStateVector.normal;

@@ -9,8 +9,8 @@ public class Engine : ScriptableObject
     public FuelType fuelType;
     [Tooltip("Mass flow rate in kg/s")]
     public AnimationCurve massFlowCurve;
-    [Tooltip("Specific impulse in s")]
-    public float engineISP;
+    [Tooltip("Exhaust velocity in m/s")]
+    public float exhaustVelocity;
     [Tooltip("Mass of the engine in kg")]
     public float engineMass;
 
@@ -36,7 +36,7 @@ public class Engine : ScriptableObject
 
         float massFlow = massFlowCurve.Evaluate(throttle);
         float fuelMass = fuelTank.Drain(massFlow * Time.fixedDeltaTime, isRealBurn);
-        float thrust = fuelMass * engineISP * Constants.STANDARD_GRAVITY;
+        float thrust = fuelMass * exhaustVelocity;
         return thrust;
     }
 }

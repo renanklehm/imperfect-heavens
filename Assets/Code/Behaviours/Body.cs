@@ -8,11 +8,13 @@ public class Body : NetworkBehaviour
 
     public iBodySolver bodySolver;
     public SolverType solverType;
-    public Vector3 initialVelocity;
+
     public float mass;
     public bool isStationaryRelativeToParent;
     public bool fullyInstantiated;
 
+    [HideInInspector]
+    public Vector3 initialVelocity;
     [HideInInspector]
     public Trajectory mainTrajectory;
     [HideInInspector]

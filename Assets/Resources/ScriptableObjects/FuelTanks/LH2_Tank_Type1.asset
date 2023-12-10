@@ -13,9 +13,9 @@ MonoBehaviour:
   m_Name: LH2_Tank_Type1
   m_EditorClassIdentifier: 
   fuelType: 0
-  totalVolume: 15000
-  dryMass: 2000
-  currentVolume: 15000
-  currentMass: 1062.75
+  totalVolume: 2000
+  dryMass: 5000
+  currentVolume: 2000
+  currentMass: 141700
   fuel: {fileID: 0}
   isInitialized: 1

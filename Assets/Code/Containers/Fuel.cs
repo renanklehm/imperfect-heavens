@@ -5,7 +5,7 @@ using UnityEngine;
 public class Fuel : ScriptableObject
 {
     public FuelType fuelType;
-    [Tooltip("Fuel density in g/m^3")]
+    [Tooltip("Fuel density in kg/m^3")]
     public float density;
     [Tooltip("Fuel energy density in MJ/kg")]
     public float energyDensity;

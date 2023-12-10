@@ -5,7 +5,6 @@ using UnityEngine;
 [RequireComponent(typeof(Body))]
 public class FreeBody : NetworkBehaviour, iBodySolver
 {
-    public bool isRunningCoroutine;
     public Body body { get; set; }
 
     public SolverType solverType { get { return SolverType.FreeBody; } set {} }
@@ -36,7 +35,6 @@ public class FreeBody : NetworkBehaviour, iBodySolver
 
     IEnumerator GenerateTrajectoryAsync(StateVector initialStateVector, Trajectory trajectory)
     {
-        isRunningCoroutine = true;
         trajectory.ClearQueue();
         float lastTimestamp = 0;
         float dynamicTimestamp = Time.fixedDeltaTime;
@@ -67,6 +65,5 @@ public class FreeBody : NetworkBehaviour, iBodySolver
             }
             elapsedTime += dynamicTimestamp;
         }
-        isRunningCoroutine = false;
     }
 }

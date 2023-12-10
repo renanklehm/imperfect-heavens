@@ -13,5 +13,5 @@ MonoBehaviour:
   m_Name: LH2
   m_EditorClassIdentifier: 
   fuelType: 0
-  density: 0.07085
+  density: 70.85
   energyDensity: 142
