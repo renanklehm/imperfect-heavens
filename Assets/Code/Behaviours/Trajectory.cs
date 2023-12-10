@@ -3,104 +3,92 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using Fusion;
+using System;
 
 public class Trajectory : NetworkBehaviour
 {
-    public StateVector newestStateVector;
-    public Queue<StateVector> stateVectorQueue;
-    public Queue<StateVector> maneuverQueue;
-
-    public Body body;
-    public LineMesh lineRenderer;
-    public int maxColorSamples = 8;
-    public int plotResolution;
-    public float arrowApparentSize;
-    public float maxSize;
-    public Color lowAcceleration = Color.green;
-    public Color highAcceleration = Color.red;
-
-    public bool isRedrawing;
+    public int maxSize;
     public bool needRedraw;
+    public bool isManeuver;
 
-    void Awake()
+    public int Count { get { return stateVectorQueue.Count; } }
+
+    [HideInInspector]
+    public StateVector newestStateVector;
+    [HideInInspector]
+    public Body body;
+    [HideInInspector]
+    public LineMesh lineRenderer;
+
+    private Queue<StateVector> stateVectorQueue;
+    public StateVector[] stateVectorArray;
+
+
+    public StateVector this[int index]
+    {
+        get
+        {
+            return stateVectorArray[index];
+        }
+    }
+
+    private void Awake()
     {
         stateVectorQueue = new Queue<StateVector>();
-        maneuverQueue = new Queue<StateVector>();
         lineRenderer = GetComponent<LineMesh>();
+    }
+
+    public void InitializeTrajectory(Body body, string name)
+    {
+        this.body = body;
+        gameObject.name = name;
+        transform.parent = null;
+        transform.position = Vector3.zero;
+        transform.rotation = Quaternion.identity;
     }
 
     private void Update()
     {
-        if (!isRedrawing && needRedraw) StartCoroutine(DrawTrajectoryAsync());
-
-        List<List<Vector3>> renderedPositions = lineRenderer.Positions;
-        renderedPositions[0][0] = body.transform.position;
-        if (renderedPositions[0].Count < stateVectorQueue.Count)
-        {
-            renderedPositions[0][renderedPositions[0].Count - 1] = body.transform.position;
-        }
-
-        lineRenderer.SetLinesFromPoints(renderedPositions);
+        DrawTrajectoryAsync();
     }
 
-    public void SetManeuver()
+    public void SetManeuver(StateVector[] maneuvers)
     {
         StateVector[] stateVectors = stateVectorQueue.ToArray();
-        StateVector[] maneuvers = maneuverQueue.ToArray();
-        stateVectorQueue.Clear();
-        maneuverQueue.Clear();
-        var test = new List<List<Vector3>>();
-        test.Add(new List<Vector3>());
-        test[0].Add(Vector3.zero);
-        test[0].Add(Vector3.zero);
-        test.Add(new List<Vector3>());
-        test[1].Add(Vector3.zero);
-        test[1].Add(Vector3.zero);
-        lineRenderer.SetLinesFromPoints(test);
+        ClearQueue();
 
         foreach (StateVector originalVector in stateVectors)
         {
             if (originalVector.timestamp < maneuvers[0].timestamp)
             {
-                Enqueue(originalVector, false);
+                Enqueue(originalVector);
             }
             else
             {
                 foreach (StateVector newVector in maneuvers)
                 {
-                    Enqueue(newVector, false);
+                    Enqueue(newVector);
                 }
                 break;
             }
         }
 
-        StartCoroutine(DrawTrajectoryAsync());
+        DrawTrajectoryAsync();
     }
 
-    public void ClearQueue(bool isManeuver)
+    public void ClearQueue()
     {
-        if (isManeuver)
-        {
-            maneuverQueue.Clear();
-        }
-        else
-        {
-            stateVectorQueue.Clear();
-        }
+        stateVectorQueue.Clear();
+        stateVectorArray = null;
     }
 
-    public void Enqueue(StateVector newStateVector, bool isManeuver)
+    public void Enqueue(StateVector newStateVector)
     {
-        if (isManeuver)
-        {
-            maneuverQueue.Enqueue(newStateVector);
-        }
-        else
-        {
-            stateVectorQueue.Enqueue(newStateVector);
-            newestStateVector = newStateVector;
-        }
+        stateVectorQueue.Enqueue(newStateVector);
+        newestStateVector = newStateVector;
         needRedraw = true;
+        if (Count > maxSize) maxSize = Count;
+        stateVectorArray = stateVectorQueue.ToArray();
     }
 
     public StateVector Dequeue()
@@ -110,7 +98,7 @@ public class Trajectory : NetworkBehaviour
         List<List<Vector3>> oldPositions = lineRenderer.Positions;
         if (oldPositions.Count < stateVectorQueue.Count)
         {
-            StartCoroutine(DrawTrajectoryAsync());
+            DrawTrajectoryAsync();
         }
         else
         {
@@ -118,6 +106,7 @@ public class Trajectory : NetworkBehaviour
             lineRenderer.SetLinesFromPoints(oldPositions);
         }
 
+        stateVectorArray = stateVectorQueue.ToArray();
         return returnVector;
     }
 
@@ -128,15 +117,14 @@ public class Trajectory : NetworkBehaviour
 
     public StateVector Peek(float timestamp = 0f)
     {
-        StateVector newStateVector = new StateVector();
+        StateVector returnVector = new StateVector();
 
         if (timestamp == 0f)
         {
-            newStateVector = stateVectorQueue.Peek();
+            returnVector = stateVectorQueue.Peek();
         }
         else
         {
-            StateVector[] stateVectorArray = stateVectorQueue.ToArray();
             for (int i = 0; i < stateVectorArray.Length; i++)
             {
                 if (stateVectorArray[i].timestamp >= timestamp)
@@ -144,93 +132,62 @@ public class Trajectory : NetworkBehaviour
                     float oldTimestamp = stateVectorArray[i].timestamp;
                     float newTimestamp = stateVectorArray[i + 1].timestamp;
                     float currentTimestamp = GravityManager.Instance.timestamp - oldTimestamp;
-                    newStateVector = StateVector.LerpVector(stateVectorArray[i], stateVectorArray[i + 1], currentTimestamp / newTimestamp);
+                    returnVector = StateVector.LerpVector(stateVectorArray[i], stateVectorArray[i + 1], currentTimestamp / newTimestamp);
                     break;
                 }
             }
         }
-
-
-        return newStateVector;
+        return returnVector;
     }
 
     public float[] GetAccelerationsAsFloat()
     {
-        float[] result = new float[stateVectorQueue.Count];
-        StateVector[] tempArray = stateVectorQueue.ToArray();
-        for (int i = 0; i < stateVectorQueue.Count; i++)
+        float[] result = new float[stateVectorArray.Length];
+        for (int i = 0; i < stateVectorArray.Length; i++)
         {
-            result[i] = tempArray[i].acceleration.magnitude;
+            result[i] = stateVectorArray[i].acceleration.magnitude;
         }
         return result;
     }
 
     public Vector3[] GetPositions()
     {
-        StateVector[] stateVectors = stateVectorQueue.ToArray();
-        Vector3[] positions = new Vector3[stateVectors.Length];
-        for (int i = 0; i < stateVectors.Length; i++)
+        Vector3[] positions = new Vector3[stateVectorArray.Length];
+        for (int i = 0; i < stateVectorArray.Length; i++)
         {
-            positions[i] = stateVectors[i].position;
+            positions[i] = stateVectorArray[i].position;
         }
 
         return positions;
     }
 
-    IEnumerator DrawTrajectoryAsync()
+    private void DrawTrajectoryAsync()
     {
-        isRedrawing = true;
-        List<List<Vector3>> trajectoryPositions = new List<List<Vector3>>();
-        trajectoryPositions.Add(new List<Vector3>());
+        if (stateVectorArray.Length == 0) return;
 
-        StateVector[] stateVectorArray = stateVectorQueue.ToArray();
-        maxSize = stateVectorArray.Length;
+        needRedraw = false;
+
+        List<List<Vector3>> trajectoryPositions = new List<List<Vector3>> { new List<Vector3>() };
         int index = 0;
-        int loopCounter = 0;
         bool breakLoop = false;
         foreach (StateVector stateVector in stateVectorArray)
         {
             if (breakLoop) break;
-            if (Vector3.Distance(stateVector.position, stateVectorArray[0].position) <= 0.5f && index != 0) breakLoop = true;
+            if (Vector3.Distance(stateVector.position, stateVectorArray[0].position) <= 0.5f && index > 10) breakLoop = true;
 
             trajectoryPositions[0].Add(stateVector.position - transform.position);
-            if (loopCounter >= Constants.COROUTINE_LOOP_BATCHSIZE)
-            {
-                loopCounter = 0;
-                yield return new WaitForEndOfFrame();
-            }
-
             index++;
-            loopCounter++;
         }
 
-
-        if (maneuverQueue.Count > 0)
+        if (!isManeuver)
         {
-            trajectoryPositions.Add(new List<Vector3>());
-            stateVectorArray = maneuverQueue.ToArray();
-            index = 0;
-            loopCounter = 0;
-            breakLoop = false;
-            foreach (StateVector stateVector in stateVectorArray)
+            trajectoryPositions[0][0] = body.transform.position;
+            if (trajectoryPositions[0].Count < stateVectorQueue.Count)
             {
-                if (breakLoop) break;
-                if (Vector3.Distance(stateVector.position, stateVectorArray[0].position) <= 0.5f && index != 0) breakLoop = true;
-
-                trajectoryPositions[1].Add(stateVector.position - transform.position);
-                if (loopCounter >= Constants.COROUTINE_LOOP_BATCHSIZE)
-                {
-                    loopCounter = 0;
-                    yield return new WaitForEndOfFrame();
-                }
-
-                index++;
-                loopCounter++;
+                trajectoryPositions[0][trajectoryPositions[0].Count - 1] = body.transform.position;
             }
         }
 
         lineRenderer.SetLinesFromPoints(trajectoryPositions);
-        isRedrawing = false;
-        needRedraw = false;
     }
 }

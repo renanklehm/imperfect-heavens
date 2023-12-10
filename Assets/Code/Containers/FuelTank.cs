@@ -25,6 +25,7 @@ public class FuelTank : ScriptableObject
         this.fuel = fuel;
         currentVolume = totalVolume * filledPercentage;
         currentMass = currentVolume * fuel.density;
+        isInitialized = true;
     }   
 
     public bool IsEmpty()

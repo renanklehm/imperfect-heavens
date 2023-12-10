@@ -46,7 +46,7 @@ public class MarkerBehaviour : MonoBehaviour
             shipController.body.bodySolver.GenerateTrajectory(newStateVector, true);
         }
     }
-    private Vector3 _deltaV;
+    private Vector3 _deltaV = Vector3.zero;
     public float exponentialFactor = 5f;
     public float maxDeltaV = 10f;
     public float thrust;
@@ -63,7 +63,6 @@ public class MarkerBehaviour : MonoBehaviour
         maneuverCanvas.worldCamera = Camera.main;
         maneuverCanvas.gameObject.SetActive(false);
         SetArrowsVisibility(false);
-        deltaV = Vector3.zero;
     }
 
     private void Update()
@@ -113,12 +112,16 @@ public class MarkerBehaviour : MonoBehaviour
 
     private void HandleMarkerPosition()
     {
+        if (isManeuvering) return;
+
         float minDistance = float.PositiveInfinity;
         StateVector selectedStateVector = new StateVector();
         Vector2 mousePosition = Input.mousePosition;
 
         foreach (Trajectory trajectory in FindObjectsOfType<Trajectory>())
         {
+            if (trajectory.IsEmpty()) continue;
+
             if (!GameManager.Instance.isPlanningManeuver && !GameManager.Instance.isRotatingCamera)
             {
                 List<List<Vector3>> renderedPositions = trajectory.lineRenderer.Positions;
@@ -135,7 +138,7 @@ public class MarkerBehaviour : MonoBehaviour
                     if (distance <= minDistance)
                     {
                         minDistance = distance;
-                        selectedStateVector = LerpVector(i, lerpFactor, trajectory.stateVectorQueue);
+                        selectedStateVector = StateVector.LerpVector(trajectory[i], trajectory[i + 1], lerpFactor);
                     }
                 }
 
@@ -166,24 +169,15 @@ public class MarkerBehaviour : MonoBehaviour
         faceCamera.forward = cameraForward;
     }
 
-    private StateVector LerpVector(int startIndex, float factor, Queue<StateVector> stateVectorQueue)
-    {
-        StateVector[] stateVectors = stateVectorQueue.ToArray();
-        return StateVector.LerpVector(stateVectors[startIndex], stateVectors[startIndex + 1], factor);
-    }
-
     public void UpdateMarker(StateVector _stateVector, Body body)
     {
-        if (!isManeuvering)
-        {
-            graphics.SetActive(true);
-            stateVector = _stateVector;
-            Quaternion targetRotation = Quaternion.LookRotation(stateVector.prograde, stateVector.normal);
-            transform.rotation = targetRotation;
-            transform.position = stateVector.position;
-            isPlayerOwned = body.HasInputAuthority;
-            SetTooltip(body.name, stateVector);
-        }
+        graphics.SetActive(true);
+        stateVector = _stateVector;
+        Quaternion targetRotation = Quaternion.LookRotation(stateVector.prograde, stateVector.normal);
+        transform.rotation = targetRotation;
+        transform.position = stateVector.position;
+        isPlayerOwned = body.HasInputAuthority;
+        SetTooltip(body.name, stateVector);
     }
 
     public void SetTooltip(string bodyName, StateVector stateVector, float relativeSpeed = 0f, float deltaV = 0f, float burnTime = 0f)
@@ -202,7 +196,7 @@ public class MarkerBehaviour : MonoBehaviour
 
     public void SetManeuver()
     {
-        shipController.body.trajectory.SetManeuver();
+        //shipController.body.mainTrajectory.SetManeuver();
         DiscardManeuver();
     }
 

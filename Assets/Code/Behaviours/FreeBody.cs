@@ -5,6 +5,7 @@ using UnityEngine;
 [RequireComponent(typeof(Body))]
 public class FreeBody : NetworkBehaviour, iBodySolver
 {
+    public bool isRunningCoroutine;
     public Body body { get; set; }
 
     public SolverType solverType { get { return SolverType.FreeBody; } set {} }
@@ -16,10 +17,9 @@ public class FreeBody : NetworkBehaviour, iBodySolver
 
     public void GetNewPoint()
     {
-        float deltaTime = GravityManager.Instance.dynamicTimestamp.Evaluate(body.trajectory.newestStateVector.acceleration.magnitude);
-        deltaTime *= Time.fixedDeltaTime;
-        StateVector newStateVector = Solver.Solve(body.trajectory.newestStateVector, body.mass, deltaTime, body.trajectory.newestStateVector.timestamp + deltaTime);
-        body.trajectory.Enqueue(newStateVector, false);
+        float deltaTime = GravityManager.Instance.dynamicTimestamp.Evaluate(body.mainTrajectory.newestStateVector.acceleration.magnitude) * Time.fixedDeltaTime;
+        StateVector newStateVector = Solver.Solve(body.mainTrajectory.newestStateVector, body.mass, deltaTime, body.mainTrajectory.newestStateVector.timestamp + deltaTime);
+        body.mainTrajectory.Enqueue(newStateVector);
     }
 
     public void GenerateTrajectory()
@@ -30,31 +30,34 @@ public class FreeBody : NetworkBehaviour, iBodySolver
     public void GenerateTrajectory(StateVector initialVector, bool isManeuver)
     {
         StopAllCoroutines();
-        body.trajectory.isRedrawing = false;
-        StartCoroutine(GenerateTrajectoryAsync(initialVector, isManeuver));
+        Trajectory trajectory = isManeuver ? body.maneuverTrajectory : body.mainTrajectory;
+        StartCoroutine(GenerateTrajectoryAsync(initialVector, trajectory));
     }
 
-    IEnumerator GenerateTrajectoryAsync(StateVector initialStateVector, bool isManeuver)
+    IEnumerator GenerateTrajectoryAsync(StateVector initialStateVector, Trajectory trajectory)
     {
-        while (body.trajectory.isRedrawing) yield return new WaitForEndOfFrame();
-        body.trajectory.ClearQueue(isManeuver);
+        isRunningCoroutine = true;
+        trajectory.ClearQueue();
         float lastTimestamp = 0;
         float dynamicTimestamp = Time.fixedDeltaTime;
         float elapsedTime = GravityManager.Instance.timestamp;
-        float maxSimulationTime = elapsedTime + Constants.TRAJECTORY_MAX_TIME_AHEAD;
+        float finalTime = GravityManager.Instance.timestamp + Constants.TRAJECTORY_MAX_TIME_AHEAD;
         int counter = 0;
-        while (elapsedTime <= maxSimulationTime)
+        Vector3 prevAcceleration = initialStateVector.acceleration;
+        while (elapsedTime <= finalTime)
         {
             if (elapsedTime >= initialStateVector.timestamp)
             {
                 StateVector newStateVector = Solver.Solve(initialStateVector, body.mass, dynamicTimestamp, elapsedTime);
                 if (elapsedTime - lastTimestamp > Constants.TRAJECTORY_TIME_INTERVAL)
                 {
-                    body.trajectory.Enqueue(newStateVector, isManeuver);
+                    trajectory.Enqueue(newStateVector);
                     lastTimestamp = elapsedTime;
                 }
                 initialStateVector = new StateVector(newStateVector);
-                dynamicTimestamp = Time.fixedDeltaTime * GravityManager.Instance.dynamicTimestamp.Evaluate(newStateVector.acceleration.magnitude);
+                Vector3 accelerationGradient = newStateVector.acceleration - prevAcceleration;
+                dynamicTimestamp = Time.fixedDeltaTime * GravityManager.Instance.dynamicTimestamp.Evaluate(accelerationGradient.magnitude);
+                prevAcceleration = newStateVector.acceleration;
                 counter++;
                 if (counter >= Constants.COROUTINE_LOOP_BATCHSIZE)
                 {
@@ -64,5 +67,6 @@ public class FreeBody : NetworkBehaviour, iBodySolver
             }
             elapsedTime += dynamicTimestamp;
         }
+        isRunningCoroutine = false;
     }
 }

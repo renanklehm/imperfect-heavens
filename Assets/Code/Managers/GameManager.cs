@@ -21,4 +21,12 @@ public class GameManager : MonoBehaviour
             Instance = this;
         }
     }
+
+    void OnGUI()
+    {
+        int fps = Mathf.RoundToInt(1.0f / Time.deltaTime);
+        string text = $"FPS: {fps}";
+
+        GUI.Label(new Rect(10, 10, 100, 20), text);
+    }
 }

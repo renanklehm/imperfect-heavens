@@ -17,11 +17,12 @@ public class ShipController : NetworkBehaviour
     private void Start()
     {
         body = GetComponent<Body>();
+        Fuel[] availableFuels = Resources.LoadAll<Fuel>("ScriptableObjects/Fuel");
         foreach (FuelTank tank in fuelTanks)
         {
-            foreach (Fuel fuel in Resources.LoadAll<Fuel>("ScriptableObjects/Fuel"))
+            foreach (Fuel fuel in availableFuels)
             {
-                if (tank.fuelType == fuel.fuelType) tank.InitializeTank(fuel, 1);
+                if (tank.fuelType == fuel.fuelType) tank.InitializeTank(Instantiate(fuel), 1);
             }
             if (!tank.isInitialized) Debug.LogError("Fuel tank not initialized");
         }

@@ -12,12 +12,32 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 844de70952743dc47878a268c4355061, type: 3}
   m_Name: Test_Engine
   m_EditorClassIdentifier: 
-  fuelTank: {fileID: 0}
+  fuelType: 0
   massFlowCurve:
     serializedVersion: 2
-    m_Curve: []
+    m_Curve:
+    - serializedVersion: 3
+      time: 0
+      value: 400
+      inSlope: 2.717
+      outSlope: 2.717
+      tangentMode: 34
+      weightedMode: 0
+      inWeight: 0
+      outWeight: 0.33333334
+    - serializedVersion: 3
+      time: 100
+      value: 671.7
+      inSlope: 2.717
+      outSlope: 2.717
+      tangentMode: 34
+      weightedMode: 0
+      inWeight: 0.33333334
+      outWeight: 0
     m_PreInfinity: 2
     m_PostInfinity: 2
     m_RotationOrder: 4
-  engineISP: 0
-  engineMass: 0
+  engineISP: 650
+  engineMass: 1500
+  fuelTank: {fileID: 11400000, guid: f6a30a0d00c18e84a9a409fad6a7277a, type: 2}
+  isInitialized: 1

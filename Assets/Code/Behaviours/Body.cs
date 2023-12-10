@@ -5,22 +5,26 @@ using Fusion;
 
 public class Body : NetworkBehaviour
 {
-    [Networked(OnChanged = nameof(UpdateStateVector))] 
-    public StateVector currentStateVector { get; set; }
+
     public iBodySolver bodySolver;
-
-    public Trajectory trajectory;
-    public float mass;
     public SolverType solverType;
-    public bool isStationaryRelativeToParent;
     public Vector3 initialVelocity;
-
+    public float mass;
+    public bool isStationaryRelativeToParent;
     public bool fullyInstantiated;
+
+    [HideInInspector]
+    public Trajectory mainTrajectory;
+    [HideInInspector]
+    public Trajectory maneuverTrajectory;
+    [HideInInspector]
+    [Networked(OnChanged = nameof(UpdateStateVector))]
+    public StateVector currentStateVector { get; set; }
 
     private void Awake()
     {
         bodySolver = GetComponent<iBodySolver>();
-        trajectory = GetComponentInChildren<Trajectory>();
+        mainTrajectory = GetComponentInChildren<Trajectory>();
         GravityManager.Instance.RegisterBody(this);
     }
 
@@ -43,18 +47,17 @@ public class Body : NetworkBehaviour
         if (solverType == SolverType.FreeBody)
         {
             name = "Player (ID: " + Object.InputAuthority.PlayerId.ToString("00") + ")";
+            maneuverTrajectory = Instantiate(mainTrajectory);
+            maneuverTrajectory.InitializeTrajectory(this, name + " - ManeuverTrajectory");
+            maneuverTrajectory.isManeuver = true;
         }
-
-        trajectory.transform.parent = null;
-        trajectory.transform.position = Vector3.zero;
-        trajectory.transform.rotation = Quaternion.identity;
-        trajectory.name = name + " - Trajectory";
-        trajectory.body = this;
+        mainTrajectory.InitializeTrajectory(this, name + " - MainTrajectory");
+        mainTrajectory.isManeuver = false;
     }
 
     private void Update()
     {
-        if (!fullyInstantiated && GravityManager.Instance != null && trajectory != null)
+        if (!fullyInstantiated && GravityManager.Instance != null && mainTrajectory != null)
         {
             bodySolver.GenerateTrajectory();
             fullyInstantiated = true;
@@ -63,11 +66,11 @@ public class Body : NetworkBehaviour
         if (!isStationaryRelativeToParent && fullyInstantiated)
         {
 
-            if (trajectory.Peek().timestamp <= GravityManager.Instance.timestamp)
+            if (mainTrajectory.Peek().timestamp <= GravityManager.Instance.timestamp)
             {
-                trajectory.Dequeue();
+                mainTrajectory.Dequeue();
             }
-            if (trajectory.stateVectorQueue.Count <= trajectory.maxSize / 2f)
+            if (mainTrajectory.Count <= mainTrajectory.maxSize / 2f)
             {
                 Debug.Log("Extending trajectory of " + name);
                 bodySolver.GenerateTrajectory();
@@ -88,9 +91,9 @@ public class Body : NetworkBehaviour
         if (!isStationaryRelativeToParent && fullyInstantiated)
         {
             float oldTimestamp = currentStateVector.timestamp;
-            float newTimestamp = trajectory.Peek().timestamp - oldTimestamp;
+            float newTimestamp = mainTrajectory.Peek().timestamp - oldTimestamp;
             float currentTimestamp = GravityManager.Instance.timestamp - oldTimestamp;
-            StateVector newStateVector = StateVector.LerpVector(currentStateVector, trajectory.Peek(), currentTimestamp / newTimestamp);
+            StateVector newStateVector = StateVector.LerpVector(currentStateVector, mainTrajectory.Peek(), currentTimestamp / newTimestamp);
 
             if (HasStateAuthority)
             {

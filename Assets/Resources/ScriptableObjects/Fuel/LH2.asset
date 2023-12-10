@@ -12,6 +12,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: cf335caaf8531c046927a68b7c2f4e9d, type: 3}
   m_Name: LH2
   m_EditorClassIdentifier: 
-  fuelName: Hydrogen
-  density: 0
-  energyDensity: 0
+  fuelType: 0
+  density: 0.07085
+  energyDensity: 142

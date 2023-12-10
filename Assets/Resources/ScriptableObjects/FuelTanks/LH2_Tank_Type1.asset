@@ -12,8 +12,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: ad06d3cf53762d2418873ed0db161c60, type: 3}
   m_Name: LH2_Tank_Type1
   m_EditorClassIdentifier: 
+  fuelType: 0
+  totalVolume: 15000
+  dryMass: 2000
+  currentVolume: 15000
+  currentMass: 1062.75
   fuel: {fileID: 0}
-  totalVolume: 0
-  dryMass: 0
-  currentVolume: 0
-  currentMass: 0
+  isInitialized: 1

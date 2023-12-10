@@ -61,9 +61,7 @@ public class GravityManager : NetworkBehaviour
     public Dictionary<MotionVector, Vector3> GetMotionVectors(Vector3 position, Vector3 velocity, Vector3 acceleration)
     {
         Dictionary<MotionVector, Vector3> result = new Dictionary<MotionVector, Vector3>();
-
         result.Add(MotionVector.Prograde, velocity.normalized);
-
         Vector3 radialOutPlaneNormal = Vector3.Cross(position - acceleration, result[MotionVector.Prograde]);
         result.Add(MotionVector.RadialOut, Vector3.Cross(result[MotionVector.Prograde], radialOutPlaneNormal).normalized);
         result.Add(MotionVector.Normal, Vector3.Cross(result[MotionVector.Prograde], result[MotionVector.RadialOut]).normalized);
@@ -88,18 +86,18 @@ public class GravityManager : NetworkBehaviour
 
     public static Vector3 CalculateForce(Body B1, StateVector smallBodyStateVector, float smallBodyMass, float timestamp = 0f)
     {
-        Vector3 _deltaDistance = Vector3.zero;
+        Vector3 _deltaDistance;
         if (timestamp == 0f)
         {
             _deltaDistance = B1.currentStateVector.position - smallBodyStateVector.position;
         }
         else if (timestamp == -1f)
         {
-            _deltaDistance = B1.trajectory.newestStateVector.position - smallBodyStateVector.position;
+            _deltaDistance = B1.mainTrajectory.newestStateVector.position - smallBodyStateVector.position;
         }
         else
         {
-            _deltaDistance = B1.trajectory.Peek(timestamp).position - smallBodyStateVector.position;
+            _deltaDistance = B1.mainTrajectory.Peek(timestamp).position - smallBodyStateVector.position;
         }
         
         Vector3 _direction = _deltaDistance.normalized;
