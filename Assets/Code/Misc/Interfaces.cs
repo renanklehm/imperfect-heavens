@@ -1,8 +1,9 @@
 using System;
+using UnityEngine;
 
 public interface iBodySolver
 {
-    public SolverType solverType { get; set; }
+    public SolverType solverType { get; }
     public Body body { get; set; }
 
     public void GetNewPoint()
@@ -10,12 +11,7 @@ public interface iBodySolver
         throw new Exception("Not implemented");
     }
 
-    public void GenerateTrajectory()
-    {
-        throw new Exception("Not implemented");
-    }
-
-    public void GenerateTrajectory(StateVector initialVector, bool isManeuver)
+    public void GenerateTrajectory(BurnData burnData = default)
     {
         throw new Exception("Not implemented");
     }

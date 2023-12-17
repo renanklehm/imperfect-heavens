@@ -15,7 +15,5 @@ MonoBehaviour:
   fuelType: 0
   totalVolume: 2000
   dryMass: 5000
-  currentVolume: 2000
-  currentMass: 141700
-  fuel: {fileID: 0}
+  fuel: {fileID: 11400000, guid: 62a1109fee35ee047912bc387b5fb7f4, type: 2}
   isInitialized: 1

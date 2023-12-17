@@ -9,7 +9,7 @@ public class DeltaVSlider : MonoBehaviour, IPointerDownHandler, IPointerUpHandle
     public Vector3 unitVector;
     private MarkerBehaviour markerBehaviour;
     private Slider slider;
-    private bool isDragging;
+    public StateTracker isDragging = new StateTracker();
 
     private void Start()
     {
@@ -19,7 +19,7 @@ public class DeltaVSlider : MonoBehaviour, IPointerDownHandler, IPointerUpHandle
 
     private void Update()
     {
-        if (isDragging)
+        if (isDragging.IsOn())
         {
             markerBehaviour.SetDeltaV(unitVector, slider.value);
         }
@@ -27,12 +27,12 @@ public class DeltaVSlider : MonoBehaviour, IPointerDownHandler, IPointerUpHandle
 
     void IPointerDownHandler.OnPointerDown(PointerEventData eventData)
     {
-        isDragging = true;
+        isDragging.SetState(true);
     }
 
     void IPointerUpHandler.OnPointerUp(PointerEventData eventData)
     {
         markerBehaviour.ClearSliders();
-        isDragging = false;
+        isDragging.SetState(false);
     }
 }

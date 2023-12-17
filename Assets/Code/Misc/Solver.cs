@@ -5,14 +5,14 @@ using UnityEngine;
 
 public class Solver
 {
-    public static StateVector Solve(StateVector initialStateVector, float mass, float deltaTime, float timeStamp, Vector3 activeForce = new Vector3())
+    public static StateVector Solve(StateVector initialStateVector, float mass, float deltaTime, float timeStamp, Vector3 externalAcceleration = new Vector3())
     {
         if (timeStamp == -1f)
         {
             timeStamp = GravityManager.Instance.timestamp + deltaTime;
         }
 
-        return EulerMethod(initialStateVector, mass, deltaTime, timeStamp, activeForce);
+        return EulerMethod(initialStateVector, mass, deltaTime, timeStamp, externalAcceleration);
     }
 
     public static StateVector Solve(float eccentricAnomaly, float semiLatusRectum, float mass, OrbitalParameters orbitalParameters)
@@ -25,14 +25,14 @@ public class Solver
         return Mathf.Sqrt((Constants.GRAVITATIONAL_CONSTANT * relativeBody.mass) / (orbitalHeight * Constants.DISTANCE_FACTOR)) / Constants.DISTANCE_FACTOR;
     }
 
-    private static StateVector EulerMethod(StateVector initialStateVector, float mass, float deltaTime, float timeStamp, Vector3 activeForce)
+    private static StateVector EulerMethod(StateVector initialStateVector, float mass, float deltaTime, float timeStamp, Vector3 externalAcceleration)
     {
-        Vector3 currentNetForce = GravityManager.Instance.GetNetForce(initialStateVector, mass, timeStamp);
-        Vector3 newGravityAcceleration = currentNetForce / mass;
-        Vector3 newAcceleration = newGravityAcceleration + (activeForce / mass);
+        Vector3 gravitationalForce = GravityManager.Instance.GetNetForce(initialStateVector, mass, timeStamp);
+        Vector3 gravitationalAcceleration = gravitationalForce / mass;
+        Vector3 newAcceleration = gravitationalAcceleration + externalAcceleration;
         Vector3 newVelocity = initialStateVector.velocity + (newAcceleration * deltaTime) / Constants.DISTANCE_FACTOR;
         Vector3 newPosition = initialStateVector.position + newVelocity * deltaTime;
-        var motionVectors = GravityManager.Instance.GetMotionVectors(newPosition, newVelocity, newGravityAcceleration);
+        var motionVectors = GravityManager.Instance.GetMotionVectors(newPosition, newVelocity, gravitationalAcceleration);
 
         return new StateVector(
             newPosition, 
@@ -40,9 +40,9 @@ public class Solver
             newAcceleration, 
             motionVectors[MotionVector.Prograde], 
             motionVectors[MotionVector.RadialOut],
-            timeStamp,
-            newGravityAcceleration,
-            activeForce);
+            gravitationalAcceleration,
+            timeStamp
+            );
     }
 
     private static StateVector KepplerEquation(float eccentricAnomaly, float semiLatusRectum, float mass, OrbitalParameters orbitalParameters)
@@ -91,7 +91,15 @@ public class Solver
 
         var motionVector = GravityManager.Instance.GetMotionVectors(positions[0], velocities[0], acceleration);
 
-        return new StateVector(positions[0], velocities[0], Vector3.zero, motionVector[MotionVector.Prograde], motionVector[MotionVector.RadialOut], time[0], acceleration);
+        return new StateVector(
+            positions[0], 
+            velocities[0], 
+            Vector3.zero,
+            motionVector[MotionVector.Prograde], 
+            motionVector[MotionVector.RadialOut], 
+            acceleration,
+            time[0]
+            );
     }
 
     public static float GetHandleSize(Vector3 position, Camera camera, float sizeFactor)

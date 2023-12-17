@@ -135,23 +135,19 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   _interpolationDataSource: 0
+  maxSize: 0
+  needRedraw: 0
+  isManeuver: 0
   newestStateVector:
     position: {x: 0, y: 0, z: 0}
     velocity: {x: 0, y: 0, z: 0}
     acceleration: {x: 0, y: 0, z: 0}
+    prograde: {x: 0, y: 0, z: 0}
+    radialOut: {x: 0, y: 0, z: 0}
+    normal: {x: 0, y: 0, z: 0}
+    gravityAcceleration: {x: 0, y: 0, z: 0}
     activeForce: {x: 0, y: 0, z: 0}
     timestamp: 0
   body: {fileID: 0}
-  trajectoryMarkerPrefab: {fileID: 5939315176201196477, guid: 800378e099a3fc944b31f90c96a6c236,
-    type: 3}
-  arrowMarkerPrefab: {fileID: 945068651990442877, guid: dc3f942306547ec4b9cfa7b044036742,
-    type: 3}
   lineRenderer: {fileID: -3802741397726564020}
-  maxColorSamples: 8
-  plotResolution: 1000
-  arrowApparentSize: 0.15
-  maxSize: 0
-  lowAcceleration: {r: 0, g: 1, b: 0, a: 1}
-  highAcceleration: {r: 1, g: 0, b: 0, a: 1}
-  isRedrawing: 0
-  needRedraw: 0
+  stateVectorArray: []

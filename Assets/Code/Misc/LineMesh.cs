@@ -143,6 +143,7 @@ public class LineMeshData {
         mesh.SetUVs(2, nexts);
         mesh.SetUVs(3, data);
         mesh.SetTriangles(triangles, 0);
+        mesh.SetColors(Enumerable.Repeat(Color.red, verticies.Length).ToList());
         //mesh.RecalculateBounds();
     }
 }

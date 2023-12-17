@@ -7,6 +7,6 @@ public class Fuel : ScriptableObject
     public FuelType fuelType;
     [Tooltip("Fuel density in kg/m^3")]
     public float density;
-    [Tooltip("Fuel energy density in MJ/kg")]
-    public float energyDensity;
+    [Tooltip("Specific heat ratio of the fluid (dimensionless)")]
+    public float gamma;
 }

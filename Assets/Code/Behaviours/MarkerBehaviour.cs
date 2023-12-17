@@ -1,72 +1,87 @@
-using System.Collections;
+using Fusion;
 using System.Collections.Generic;
 using System;
 using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
 
-public class MarkerBehaviour : MonoBehaviour
+public class MarkerBehaviour : NetworkBehaviour
 {
-    public bool isPlayerOwned;
     public bool isManeuvering;
     public bool isHovering;
 
     public LayerMask layerMask;
     public float sizeFactor;
-    public StateVector stateVector;
     public GameObject graphics;
     public Transform faceCamera;
     public Canvas tooltipCanvas;
     public Canvas maneuverCanvas;
-    public ShipController shipController;
 
-    //Arrows
+    [HideInInspector]
+    public StateVector stateVector;
+
+    [Header("Arrow Settings")]
     public float minArrowSize = .2f;
     public float maxArrowSize = .6f;
     public float springiness = 0.33f;
     public float maxDragCourse = 2f;
     public float visualOffsetFactor = 0.33f;
 
-    //Tooltip
+    [Header("Tooltip Settings")]
     public TMP_Text tooltipHeader;
     public TMP_Text tooltipLabel;
 
-    //Maneuver Node
-    public Vector3 deltaV {
-        get { return _deltaV; } 
-        set
-        {
-            var burnSimulation = shipController.SimulateBurn(1, value.magnitude);
-            maneuverLabel.text = "";
-            maneuverLabel.text += "burn duration:    " + burnSimulation["burnDuration"].ToString("0.00") + "s\n";
-            maneuverLabel.text += "delta-v:          " + burnSimulation["deltaV"].ToString("0.00") + " m/s\n";
-            maneuverLabel.text += "fuel consumption: " + burnSimulation["fuelConsumption"].ToString("0.00") + " kg\n";
-            maneuverLabel.text += "remaining fuel:   " + burnSimulation["remainingFuelMass"].ToString("0.00") + " kg\n";
-            _deltaV = value.normalized * burnSimulation["deltaV"];
-            StateVector newStateVector = new StateVector(stateVector);
-            newStateVector.velocity += (_deltaV.x / Constants.DISTANCE_FACTOR) * newStateVector.radialOut;
-            newStateVector.velocity += (_deltaV.y / Constants.DISTANCE_FACTOR) * newStateVector.normal;
-            newStateVector.velocity += (_deltaV.z / Constants.DISTANCE_FACTOR) * newStateVector.prograde;
-            shipController.body.bodySolver.GenerateTrajectory(newStateVector, true);
-        }
-    }
-    private Vector3 _deltaV = Vector3.zero;
+    [Header("Maneuver Settings")]
     public float exponentialFactor = 5f;
     public float maxDeltaV = 10f;
-    public float thrust;
-    public Slider thrustSlider;
-    public TMP_Text thrustLabel;
+    public Slider throttleSlider;
+    public TMP_Text throttleLabel;
     public TMP_Text maneuverLabel;
     public Slider[] deltaVSliders;
     public TMP_Text[] deltaVLabels;
     public ArrowHandler[] arrows;
 
+    private Body currentBody;
+
+    public float throttle
+    {
+        get { return _throttle; }
+        set
+        {
+            _throttle = value;
+            deltaV = deltaV;
+        }
+    }
+    public Vector3 deltaV
+    {
+        get { return _deltaV; }
+        set
+        {
+            burnSimulation = shipController.SimulateBurn(ToBodyMotionFrame(value).normalized, stateVector.timestamp, throttle, value.magnitude);
+            maneuverLabel.text = "";
+            maneuverLabel.text += "burn duration:    " + burnSimulation.burnDuration.ToString("0.00") + "s\n";
+            maneuverLabel.text += "delta-v:          " + burnSimulation.deltaV.ToString("0.00") + " m/s\n";
+            maneuverLabel.text += "fuel consumption: " + burnSimulation.fuelConsumption.ToString("0.00") + " kg\n";
+            maneuverLabel.text += "remaining fuel:   " + burnSimulation.remainingFuelMass.ToString("0.00") + " kg\n";
+            if (burnSimulation.success) _deltaV = value;
+            shipController.body.bodySolver.GenerateTrajectory(burnSimulation);
+        }
+    }
+    private float _throttle = 0f;
+    private Vector3 _deltaV = Vector3.zero;
+    private ShipController shipController;
+    private BurnData burnSimulation;
+
     private void Start()
     {
+        if (!HasInputAuthority) Destroy(this);
+
+        shipController = GetComponentInParent<ShipController>();
         tooltipCanvas.worldCamera = Camera.main;
         maneuverCanvas.worldCamera = Camera.main;
         maneuverCanvas.gameObject.SetActive(false);
         SetArrowsVisibility(false);
+        transform.parent = null;
     }
 
     private void Update()
@@ -77,7 +92,7 @@ public class MarkerBehaviour : MonoBehaviour
 
         foreach (ArrowHandler x in arrows)
         {
-            if (x.isDragging)
+            if (x.isDragging.IsOn())
             {
                 deltaV += x.unitVector * x.deltaV;
             }
@@ -89,7 +104,7 @@ public class MarkerBehaviour : MonoBehaviour
 
         if (isHovering)
         {
-            if (Input.GetMouseButtonDown(0) && isPlayerOwned && !isManeuvering)
+            if (Input.GetMouseButtonDown(0) && !isManeuvering && currentBody.HasInputAuthority)
             {
                 deltaV = Vector3.zero;
                 isManeuvering = true;
@@ -149,7 +164,8 @@ public class MarkerBehaviour : MonoBehaviour
                 if (minDistance <= Constants.MOUSE_HOVER_SCREEN_DISTANCE)
                 {
                     isHovering = true;
-                    UpdateMarker(selectedStateVector, trajectory.body);
+                    currentBody = trajectory.body;
+                    UpdateMarker(selectedStateVector);
                     break;
                 }
                 else
@@ -169,19 +185,26 @@ public class MarkerBehaviour : MonoBehaviour
     private void FaceCamera()
     {
         Vector3 cameraForward = -Camera.main.transform.forward;
-        cameraForward.y = 0f;
         faceCamera.forward = cameraForward;
     }
 
-    public void UpdateMarker(StateVector _stateVector, Body body)
+    private Vector3 ToBodyMotionFrame(Vector3 velocity)
+    {
+        StateVector tempStateVector = new StateVector(stateVector);
+        tempStateVector.velocity += (velocity.x / Constants.DISTANCE_FACTOR) * tempStateVector.radialOut;
+        tempStateVector.velocity += (velocity.y / Constants.DISTANCE_FACTOR) * tempStateVector.normal;
+        tempStateVector.velocity += (velocity.z / Constants.DISTANCE_FACTOR) * tempStateVector.prograde;
+        return tempStateVector.velocity;
+    }
+
+    public void UpdateMarker(StateVector _stateVector)
     {
         graphics.SetActive(true);
         stateVector = _stateVector;
         Quaternion targetRotation = Quaternion.LookRotation(stateVector.prograde, stateVector.normal);
         transform.rotation = targetRotation;
         transform.position = stateVector.position;
-        isPlayerOwned = body.HasInputAuthority;
-        SetTooltip(body.name, stateVector);
+        SetTooltip(currentBody.name, stateVector);
     }
 
     public void SetTooltip(string bodyName, StateVector stateVector, float relativeSpeed = 0f, float deltaV = 0f, float burnTime = 0f)
@@ -200,7 +223,7 @@ public class MarkerBehaviour : MonoBehaviour
 
     public void SetManeuver()
     {
-        //shipController.body.mainTrajectory.SetManeuver();
+        shipController.RPC_AddManeuver(shipController.Runner.LocalPlayer);
         DiscardManeuver();
     }
 
@@ -213,10 +236,10 @@ public class MarkerBehaviour : MonoBehaviour
         GameManager.Instance.isPlanningManeuver = false;
     }
 
-    public void SetThrust(float value)
+    public void SetThrottle(float value)
     {
-        thrust = value;
-        thrustLabel.text = (value * 100).ToString("0.00") + "%";
+        throttle = value;
+        throttleLabel.text = (value * 100).ToString("0.00") + "%";
     }
 
     public void ResetDeltaV()

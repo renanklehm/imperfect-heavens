@@ -19,17 +19,17 @@ MonoBehaviour:
     - serializedVersion: 3
       time: 0
       value: 1
-      inSlope: 2
-      outSlope: 2
+      inSlope: 36
+      outSlope: 36
       tangentMode: 34
       weightedMode: 0
       inWeight: 0
       outWeight: 0.33333334
     - serializedVersion: 3
       time: 1
-      value: 3
-      inSlope: 2
-      outSlope: 2
+      value: 37
+      inSlope: 36
+      outSlope: 36
       tangentMode: 34
       weightedMode: 0
       inWeight: 0.33333334
@@ -37,7 +37,9 @@ MonoBehaviour:
     m_PreInfinity: 2
     m_PostInfinity: 2
     m_RotationOrder: 4
-  exhaustVelocity: 8000
-  engineMass: 6000
-  fuelTank: {fileID: 11400000, guid: f6a30a0d00c18e84a9a409fad6a7277a, type: 2}
-  isInitialized: 1
+  specificImpulse: 900
+  chamberPressure: 4090
+  chamberTemperature: 3000
+  throatCrossSectionalArea: 0.2
+  exhaustCrossSectionalArea: 0.6
+  dryMass: 10000

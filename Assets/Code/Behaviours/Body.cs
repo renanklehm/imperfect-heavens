@@ -16,9 +16,7 @@ public class Body : NetworkBehaviour
     [HideInInspector]
     public Vector3 initialVelocity;
     [HideInInspector]
-    public Trajectory mainTrajectory;
-    [HideInInspector]
-    public Trajectory maneuverTrajectory;
+    public Trajectory trajectory;
     [HideInInspector]
     [Networked(OnChanged = nameof(UpdateStateVector))]
     public StateVector currentStateVector { get; set; }
@@ -26,7 +24,7 @@ public class Body : NetworkBehaviour
     private void Awake()
     {
         bodySolver = GetComponent<iBodySolver>();
-        mainTrajectory = GetComponentInChildren<Trajectory>();
+        trajectory = GetComponentInChildren<Trajectory>();
         GravityManager.Instance.RegisterBody(this);
     }
 
@@ -41,77 +39,41 @@ public class Body : NetworkBehaviour
                 Vector3.zero,
                 motionVectors[MotionVector.Prograde],
                 motionVectors[MotionVector.RadialOut],
-                GravityManager.Instance.timestamp,
-                Vector3.zero
+                Vector3.zero,
+                GravityManager.Instance.timestamp
             );
         }
 
         if (solverType == SolverType.FreeBody)
         {
             name = "Player (ID: " + Object.InputAuthority.PlayerId.ToString("00") + ")";
-            maneuverTrajectory = Instantiate(mainTrajectory);
-            maneuverTrajectory.InitializeTrajectory(this, name + " - ManeuverTrajectory");
-            maneuverTrajectory.isManeuver = true;
         }
-        mainTrajectory.InitializeTrajectory(this, name + " - MainTrajectory");
-        mainTrajectory.isManeuver = false;
+        trajectory.InitializeTrajectory(this, name + " - MainTrajectory");
+        trajectory.isManeuver = false;
     }
 
     private void Update()
     {
-        if (!fullyInstantiated && GravityManager.Instance != null && mainTrajectory != null)
+        if (!fullyInstantiated && GravityManager.Instance != null && trajectory != null)
         {
             bodySolver.GenerateTrajectory();
             fullyInstantiated = true;
         }
 
-        if (!isStationaryRelativeToParent && fullyInstantiated)
+        if (!isStationaryRelativeToParent && fullyInstantiated && trajectory.Peek().timestamp <= GravityManager.Instance.timestamp)
         {
-
-            if (mainTrajectory.Peek().timestamp <= GravityManager.Instance.timestamp)
-            {
-                mainTrajectory.Dequeue();
-            }
-            if (mainTrajectory.Count <= mainTrajectory.maxSize / 2f)
-            {
-                Debug.Log("Extending trajectory of " + name);
-                bodySolver.GenerateTrajectory();
-            }
-
-            Vector3 directionOfMotion = (currentStateVector.position + currentStateVector.velocity) - currentStateVector.position;
-            Vector3 originOfMotion = -currentStateVector.position;
-            directionOfMotion.Normalize();
-            originOfMotion.Normalize();
-            Vector3 newUp = Vector3.Cross(originOfMotion, directionOfMotion).normalized;
-            Quaternion newRotation = Quaternion.LookRotation(directionOfMotion, newUp);
-            transform.rotation = newRotation;
+            trajectory.Dequeue();
         }
     }
 
     public override void FixedUpdateNetwork()
     {
-        if (!isStationaryRelativeToParent && fullyInstantiated)
+        if (!isStationaryRelativeToParent && fullyInstantiated && HasStateAuthority)
         {
-            float oldTimestamp = currentStateVector.timestamp;
-            float newTimestamp = mainTrajectory.Peek().timestamp - oldTimestamp;
-            float currentTimestamp = GravityManager.Instance.timestamp - oldTimestamp;
-            StateVector newStateVector = StateVector.LerpVector(currentStateVector, mainTrajectory.Peek(), currentTimestamp / newTimestamp);
-
-            if (HasStateAuthority)
-            {
-                currentStateVector = newStateVector;
-            }
-            else
-            {
-                float errorScore = StateVector.ScoreDifference(currentStateVector, newStateVector);
-                if (errorScore > Constants.DESYNC_MARGIN_OF_ERROR && solverType == SolverType.FreeBody)
-                {
-                    Debug.Log("Error Score: " + errorScore);
-                    bodySolver.GenerateTrajectory();
-                }
-            }
+            currentStateVector = Solver.Solve(currentStateVector, mass, GravityManager.Instance.deltaTime, GravityManager.Instance.timestamp);
         }
     }
+
     private static void UpdateStateVector(Changed<Body> changed)
     {
         changed.Behaviour.transform.position = changed.Behaviour.currentStateVector.position;

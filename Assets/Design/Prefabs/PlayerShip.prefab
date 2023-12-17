@@ -66,6 +66,7 @@ MonoBehaviour:
   - {fileID: 6349411372009949456}
   - {fileID: 7610428414282007543}
   - {fileID: 1790497414016018411}
+  - {fileID: 5901795573008514150}
   SimulationBehaviours: []
 --- !u!114 &1831161703602503313
 MonoBehaviour:
@@ -109,12 +110,11 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   _interpolationDataSource: 0
   solverType: 1
-  initialVelocity: {x: 0, y: 0, z: 0}
   mass: 10000
   isStationaryRelativeToParent: 0
   fullyInstantiated: 0
-  mainTrajectory: {fileID: 0}
-  maneuverTrajectory: {fileID: 0}
+  initialVelocity: {x: 0, y: 0, z: 0}
+  trajectory: {fileID: 0}
   _currentStateVector:
     position: {x: 0, y: 0, z: 0}
     velocity: {x: 0, y: 0, z: 0}
@@ -123,7 +123,7 @@ MonoBehaviour:
     radialOut: {x: 0, y: 0, z: 0}
     normal: {x: 0, y: 0, z: 0}
     gravityAcceleration: {x: 0, y: 0, z: 0}
-    activeForce: {x: 0, y: 0, z: 0}
+    externalAcceleration: {x: 0, y: 0, z: 0}
     timestamp: 0
 --- !u!114 &7610428414282007543
 MonoBehaviour:
@@ -138,7 +138,6 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   _interpolationDataSource: 0
-  isRunningCoroutine: 0
 --- !u!114 &1790497414016018411
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -282,11 +281,6 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 1161084578142472892}
     m_Modifications:
-    - target: {fileID: -8306305797280972938, guid: 800378e099a3fc944b31f90c96a6c236,
-        type: 3}
-      propertyPath: shipController
-      value: 
-      objectReference: {fileID: 1790497414016018411}
     - target: {fileID: 332610707899269287, guid: 800378e099a3fc944b31f90c96a6c236,
         type: 3}
       propertyPath: m_AnchorMax.y
@@ -588,6 +582,18 @@ Transform:
     type: 3}
   m_PrefabInstance: {fileID: 6727657865834234640}
   m_PrefabAsset: {fileID: 0}
+--- !u!114 &5901795573008514150 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: -8306305797280972938, guid: 800378e099a3fc944b31f90c96a6c236,
+    type: 3}
+  m_PrefabInstance: {fileID: 6727657865834234640}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9284e330a330c544db55f47d0390ba1d, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
 --- !u!1001 &6898940899228049420
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -655,11 +661,6 @@ PrefabInstance:
         type: 3}
       propertyPath: Flags
       value: 3073
-      objectReference: {fileID: 0}
-    - target: {fileID: 8848967566401462880, guid: 88cb8218f8dc6504ea6aacde5b3cc03e,
-        type: 3}
-      propertyPath: DestroyWhenStateAuthorityLeaves
-      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 8848967566401462880, guid: 88cb8218f8dc6504ea6aacde5b3cc03e,
         type: 3}

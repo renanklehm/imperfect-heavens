@@ -17,6 +17,10 @@ public class GravityManager : NetworkBehaviour
     public SmoothCurve dynamicTimestamp;
     public List<Body> onRailsBodies;
     public List<Body> freeBodies;
+
+    [HideInInspector]
+    public float deltaTime;
+
     public static GravityManager Instance { get; set; }
     private void Awake()
     {
@@ -31,11 +35,13 @@ public class GravityManager : NetworkBehaviour
         dynamicTimestamp = new SmoothCurve(maxTimestepMultiplier, dampFactor);
     }
 
-    private void FixedUpdate()
+    public override void FixedUpdateNetwork()
     {
+        deltaTime = Runner.DeltaTime * timeWarp;
+
         if (HasStateAuthority)
         {
-            timestamp += Time.fixedDeltaTime * timeWarp;
+            timestamp += deltaTime;
         }
     }
 
@@ -93,11 +99,11 @@ public class GravityManager : NetworkBehaviour
         }
         else if (timestamp == -1f)
         {
-            _deltaDistance = B1.mainTrajectory.newestStateVector.position - smallBodyStateVector.position;
+            _deltaDistance = B1.trajectory.newestStateVector.position - smallBodyStateVector.position;
         }
         else
         {
-            _deltaDistance = B1.mainTrajectory.Peek(timestamp).position - smallBodyStateVector.position;
+            _deltaDistance = B1.trajectory.Peek(timestamp).position - smallBodyStateVector.position;
         }
         
         Vector3 _direction = _deltaDistance.normalized;

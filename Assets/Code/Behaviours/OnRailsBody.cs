@@ -6,7 +6,7 @@ using Fusion;
 [RequireComponent(typeof(Body))]
 public class OnRailsBody : NetworkBehaviour, iBodySolver
 {
-    public SolverType solverType { get { return SolverType.OnRails; } set { } }
+    public SolverType solverType { get { return SolverType.OnRails; } }
     public Body body { get; set; }
     public OrbitalParameters orbitalParameters;
     public int plotSteps;
@@ -34,17 +34,17 @@ public class OnRailsBody : NetworkBehaviour, iBodySolver
     {
         lastEccentricAnomaly += 2 * Mathf.PI / plotSteps;
         StateVector newStateVector = Solver.Solve(lastEccentricAnomaly, semiLatusRectum, body.mass, orbitalParameters);
-        body.mainTrajectory.Enqueue(newStateVector);
+        body.trajectory.Enqueue(newStateVector);
     }
 
-    public void GenerateTrajectory()
+    public void GenerateTrajectory(BurnData burnData = default)
     {
         StartCoroutine(GenerateTrajectoryAsync());
     }
 
     IEnumerator GenerateTrajectoryAsync()
     {
-        body.mainTrajectory.Enqueue(body.currentStateVector);
+        body.trajectory.Enqueue(body.currentStateVector);
         for (int j = 0; j <= plotSteps; j++)
         {
             lastEccentricAnomaly = 2 * Mathf.PI / plotSteps * j;
@@ -56,10 +56,10 @@ public class OnRailsBody : NetworkBehaviour, iBodySolver
             }
             else
             {
-                body.mainTrajectory.Enqueue(newStateVector);
+                body.trajectory.Enqueue(newStateVector);
             }
         }
-        body.mainTrajectory.needRedraw = true;
+        body.trajectory.needRedraw = true;
         yield return null;
     }
 }

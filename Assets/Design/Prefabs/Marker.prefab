@@ -2681,6 +2681,10 @@ MonoBehaviour:
     serializedVersion: 2
     m_Bits: 32
   sizeFactor: 0.05
+  graphics: {fileID: 9199146129507022343}
+  faceCamera: {fileID: 3389143772734480016}
+  tooltipCanvas: {fileID: 3382337656870053778}
+  maneuverCanvas: {fileID: 4695963105146742153}
   stateVector:
     position: {x: 0, y: 0, z: 0}
     velocity: {x: 0, y: 0, z: 0}
@@ -2691,11 +2695,6 @@ MonoBehaviour:
     gravityAcceleration: {x: 0, y: 0, z: 0}
     activeForce: {x: 0, y: 0, z: 0}
     timestamp: 0
-  graphics: {fileID: 9199146129507022343}
-  faceCamera: {fileID: 3389143772734480016}
-  tooltipCanvas: {fileID: 3382337656870053778}
-  maneuverCanvas: {fileID: 4695963105146742153}
-  shipController: {fileID: 0}
   minArrowSize: 0.2
   maxArrowSize: 0.4
   springiness: 0.33
@@ -2705,9 +2704,9 @@ MonoBehaviour:
   tooltipLabel: {fileID: 4081346735064884897}
   exponentialFactor: 5
   maxDeltaV: 10
-  thrust: 0
-  thrustSlider: {fileID: 2973213686947693756}
-  thrustLabel: {fileID: 3137737126778812288}
+  throttle: 0
+  throttleSlider: {fileID: 2973213686947693756}
+  throttleLabel: {fileID: 3137737126778812288}
   maneuverLabel: {fileID: 8958949781306360671}
   deltaVSliders:
   - {fileID: 878954747081192216}
@@ -2885,7 +2884,7 @@ GameObject:
   - component: {fileID: 3724378522907809179}
   - component: {fileID: 2973213686947693756}
   m_Layer: 5
-  m_Name: Thrust Slider
+  m_Name: Throttle Slider
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -2967,7 +2966,7 @@ MonoBehaviour:
       m_Calls:
       - m_Target: {fileID: -8306305797280972938}
         m_TargetAssemblyTypeName: MarkerBehaviour, Assembly-CSharp
-        m_MethodName: SetThrust
+        m_MethodName: SetThrottle
         m_Mode: 0
         m_Arguments:
           m_ObjectArgument: {fileID: 0}
@@ -3064,7 +3063,7 @@ GameObject:
   - component: {fileID: 5816254127371699066}
   - component: {fileID: 3137737126778812288}
   m_Layer: 5
-  m_Name: Label
+  m_Name: Throttle Label
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -3198,7 +3197,7 @@ GameObject:
   - component: {fileID: 8329371002216146287}
   - component: {fileID: 8958949781306360671}
   m_Layer: 5
-  m_Name: Label
+  m_Name: Maneuver Label
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -4751,7 +4750,7 @@ GameObject:
   - component: {fileID: 8267415996902531570}
   - component: {fileID: 89985139163978706}
   m_Layer: 5
-  m_Name: Thrust Header
+  m_Name: Throttle Header
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0

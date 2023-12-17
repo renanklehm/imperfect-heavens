@@ -6,7 +6,7 @@ public class ArrowHandler : MonoBehaviour
 {
     public Vector3 unitVector;
     public float deltaV;
-    public bool isDragging = false;
+    public StateTracker isDragging = new StateTracker();
 
     private MarkerBehaviour marker;
     private Vector3 startPosition;
@@ -29,13 +29,13 @@ public class ArrowHandler : MonoBehaviour
 
             if (Physics.Raycast(ray, out hit, Mathf.Infinity, marker.layerMask) && hit.collider.gameObject == gameObject)
             {
-                isDragging = true;
-                GameManager.Instance.isInteractingUI = isDragging;
+                isDragging.SetState(true);
+                GameManager.Instance.isInteractingUI = true;
                 startPointHit = hit.point;
             }
         }
 
-        if (isDragging)
+        if (isDragging.IsOn())
         {
             Vector2 mousePosition = Input.mousePosition;
             Vector2 startPoint = Camera.main.WorldToScreenPoint(startPointHit);
@@ -50,8 +50,8 @@ public class ArrowHandler : MonoBehaviour
 
         if (Input.GetMouseButtonUp(0))
         {
-            isDragging = false;
-            GameManager.Instance.isInteractingUI = isDragging;
+            isDragging.SetState(false);
+            GameManager.Instance.isInteractingUI = false;
             transform.localPosition = startPosition;
             deltaV = 0f;
         }
