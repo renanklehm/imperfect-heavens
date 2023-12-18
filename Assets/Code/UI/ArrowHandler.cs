@@ -8,13 +8,13 @@ public class ArrowHandler : MonoBehaviour
     public float deltaV;
     public StateTracker isDragging = new StateTracker();
 
-    private MarkerBehaviour marker;
+    private ManeuverNode marker;
     private Vector3 startPosition;
     private Vector3 startPointHit;
 
     private void Start()
     {
-        marker = GetComponentInParent<MarkerBehaviour>();
+        marker = GetComponentInParent<ManeuverNode>();
         startPosition = transform.localPosition;
     }
 

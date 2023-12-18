@@ -12,8 +12,11 @@ public struct Constants
     public const float DEG2RAD = 0.0174533f;
     public const float DESYNC_MARGIN_OF_ERROR = 0.1f;
     public const float TRAJECTORY_TIME_INTERVAL = 60f;
-    public const float TRAJECTORY_MAX_TIME_AHEAD = 86400f;
+    public const float TRAJECTORY_MAX_TIME_AHEAD = 84600f;
     public const float MOUSE_HOVER_SCREEN_DISTANCE = 10f;
     public const float TRAJECTORY_LINE_THICKNESS = 0.001f;
     public const float BURN_SIMULATION_TIMESTEP = 1f;
+    public const float DYNAMIC_TIMESTEP_MIN_VALUE = 0.1f;
+    public const float DYNAMIC_TIMESTEP_DAMP_FACTOR = 0.20f;
+    public const float DYNAMIC_TIMESTEP_MAX_VALUE = 60f;
 }

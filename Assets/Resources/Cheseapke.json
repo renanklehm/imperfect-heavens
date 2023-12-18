@@ -1,0 +1,151 @@
+{
+  "Name": "Cheseapke class FAC",
+  "Skin": {
+    "Material": {
+      "Name": "Aluminum",
+      "Density": 2710
+    },
+    "Thickness": 1.5,
+    "DryMass": 7057
+  },
+  "Structure": {
+    "Material": {
+      "Name": "Titanium",
+      "Density": 4506
+    },
+    "DryMass": 20220
+  },
+  "CrewModules": [
+    {
+      "Name": "Main habitat",
+      "DryMass": 12000,
+      "CrewCapacity": 4
+    }
+  ],
+  "CICModule": {
+    "Name": "CIC",
+    "DryMass": 2000,
+    "CrewCapacity": 4
+  },
+  "PowerCell": [
+    {
+      "Name": "PC17C fuel-cell",
+      "Count": 7,
+      "DryMass": 122,
+      "PowerOutput": 12000
+    }
+  ],
+  "Storage": [
+    {
+      "Content": {
+        "Name": "Food",
+        "Density": 1200
+      },
+      "Capacity": 200
+    },
+    {
+      "Content": {
+        "Name": "Water",
+        "Density": 1000
+      },
+      "Capacity": 20000
+    },
+    {
+      "Content": {
+        "Name": "Waste",
+        "Density": 800
+      },
+      "Capacity": 20
+    }
+  ],
+  "Radiators": [
+    {
+      "Name": "Graphene fixed radiator",
+      "DryMass": 12500,
+      "Cooling": 1000000
+    }
+  ],
+  "Tanks": [
+    {
+      "Content": {
+        "Name": "Liquid Hydrogen",
+        "Density": 70.85
+      },
+      "DryMass": 4500,
+      "Capacity": 105000
+    },
+    {
+      "Content": {
+        "Name": "Liquid Oxygen",
+        "Density": 1141
+      },
+      "DryMass": 22000,
+      "Capacity": 630000
+    }
+  ],
+  "EngineClusters": [
+    {
+      "Name": "ACRE [7]",
+      "Count": 7,
+      "DryMass": 1100,
+      "Modes": [
+        {
+          "Name": "LANTR",
+          "FuelMisture": {
+            "Fuel": {
+              "Name": "Liquid Hydrogen",
+              "Density": 70.85
+            },
+            "Oxidizer": {
+              "Name": "Liquid Oxygen",
+              "Density": 1141
+            },
+            "Ratio": 6
+          },
+          "MaxMassFlow": 122.32,
+          "MinMassFlow": 48.93,
+          "SpecificImpulseVacumn": 550,
+          "SpecificImpulseAtmosphere": 0
+        },
+        {
+          "Name": "NTR",
+          "FuelMisture": {
+            "Fuel": {
+              "Name": "Liquid Hydrogen",
+              "Density": 70.85
+            }
+          },
+          "MaxMassFlow": 21.75,
+          "MinMassFlow": 8.70,
+          "SpecificImpulseVacumn": 900,
+          "SpecificImpulseAtmosphere": 0
+        }
+      ]
+    },
+    {
+      "Name": "Chem test [9]",
+      "Count": 9,
+      "DryMass": 0,
+      "Modes": [
+        {
+          "Name": "HydraLox",
+          "FuelMisture": {
+            "Fuel": {
+              "Name": "Liquid Hydrogen",
+              "Density": 70.85
+            },
+            "Oxidizer": {
+              "Name": "Liquid Oxygen",
+              "Density": 1141
+            },
+            "Ratio": 6
+          },
+          "MaxMassFlow": 500,
+          "MinMassFlow": 310,
+          "SpecificImpulseVacumn": 380,
+          "SpecificImpulseAtmosphere": 310
+        }
+      ]
+    }
+  ]
+}

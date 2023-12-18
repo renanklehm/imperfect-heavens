@@ -38,10 +38,9 @@ public class Trajectory : NetworkBehaviour
         lineRenderer = GetComponent<LineMesh>();
     }
 
-    public void InitializeTrajectory(Body body, string name)
+    public void InitializeTrajectory(Body body)
     {
         this.body = body;
-        gameObject.name = name;
         transform.parent = null;
         transform.position = Vector3.zero;
         transform.rotation = Quaternion.identity;

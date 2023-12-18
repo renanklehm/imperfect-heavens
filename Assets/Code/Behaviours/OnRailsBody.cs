@@ -37,7 +37,7 @@ public class OnRailsBody : NetworkBehaviour, iBodySolver
         body.trajectory.Enqueue(newStateVector);
     }
 
-    public void GenerateTrajectory(BurnData burnData = default)
+    public void GenerateTrajectory(Maneuver burnData = default)
     {
         StartCoroutine(GenerateTrajectoryAsync());
     }

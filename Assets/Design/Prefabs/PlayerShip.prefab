@@ -110,7 +110,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   _interpolationDataSource: 0
   solverType: 1
-  mass: 10000
+  mass: 0
   isStationaryRelativeToParent: 0
   fullyInstantiated: 0
   initialVelocity: {x: 0, y: 0, z: 0}
@@ -151,12 +151,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   _interpolationDataSource: 0
-  fuelTanks:
-  - {fileID: 11400000, guid: f6a30a0d00c18e84a9a409fad6a7277a, type: 2}
-  engines:
-  - {fileID: 11400000, guid: 42b89871993e923469cf27f393208cac, type: 2}
-  - {fileID: 11400000, guid: 42b89871993e923469cf27f393208cac, type: 2}
-  - {fileID: 11400000, guid: 42b89871993e923469cf27f393208cac, type: 2}
+  shipName: Cheseapke
   body: {fileID: 0}
 --- !u!1 &6473343030877880774
 GameObject:
@@ -419,7 +414,7 @@ PrefabInstance:
     - target: {fileID: 5939315176201196477, guid: 800378e099a3fc944b31f90c96a6c236,
         type: 3}
       propertyPath: m_Name
-      value: Marker
+      value: ManueverNode
       objectReference: {fileID: 0}
     - target: {fileID: 6146326280209318180, guid: 800378e099a3fc944b31f90c96a6c236,
         type: 3}

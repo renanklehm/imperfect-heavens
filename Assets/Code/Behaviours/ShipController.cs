@@ -1,62 +1,43 @@
-using System.Collections;
-using System.Collections.Generic;
+using Newtonsoft.Json;
 using UnityEngine;
 using Fusion;
-using Fusion.Sockets;
 using System;
+using UnityEditor;
 
 [RequireComponent(typeof(FreeBody))]
 public class ShipController : NetworkBehaviour
 {
-    public FuelTank[] fuelTanks;
-    public Engine[] engines;
-
+    public string shipName;
     [HideInInspector]
     public Body body;
+    public Ship ship;
 
     private void Start()
     {
+        TextAsset textAsset = Resources.Load<TextAsset>(shipName);
+        if (textAsset != null)
+        {
+            string jsonContent = textAsset.text;
+            ship = JsonConvert.DeserializeObject<Ship>(jsonContent);
+        }
+        else
+        {
+            throw new Exception("Ship file not found");
+        }
+
         body = GetComponent<Body>();
-        body.mass = 0;
-        
-        foreach (FuelTank tank in fuelTanks)
-        {
-            tank.InitializeTank(1);
-            body.mass += tank.currentFuelMass;
-            body.mass += tank.dryMass;
-        }
-
-        foreach (Engine engine in engines)
-        {
-            engine.InitializeEngine();
-            body.mass += engine.dryMass;
-        }
+        body.mass = ship.mass;
+        body.SetName(shipName);
     }
 
-    private void FixedUpdate()
+    private void Update()
     {
- 
+
+        body.mass = ship.mass;
     }
 
-    public float GetCurrentFuelMass()
+    public void AddManeuver(Maneuver newManeuver)
     {
-        float totalFuelMass = 0;
-        foreach (FuelTank tank in fuelTanks)
-        {
-            totalFuelMass += tank.currentFuelMass;
-        }
-
-        return totalFuelMass;
-    }
-
-    [Rpc(RpcSources.InputAuthority, RpcTargets.All)]
-    public void RPC_AddManeuver(PlayerRef playerRef)
-    {
-        
-    }
-
-    public BurnData SimulateBurn(Vector3 direction, float startTime, float throttle, float deltaV)
-    {
-        return new BurnData(direction, startTime, throttle, deltaV, engines, fuelTanks);
+        body.bodySolver.SetManeuver(newManeuver);
     }
 }

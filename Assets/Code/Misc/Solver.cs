@@ -30,7 +30,7 @@ public class Solver
         Vector3 gravitationalForce = GravityManager.Instance.GetNetForce(initialStateVector, mass, timeStamp);
         Vector3 gravitationalAcceleration = gravitationalForce / mass;
         Vector3 newAcceleration = gravitationalAcceleration + externalAcceleration;
-        Vector3 newVelocity = initialStateVector.velocity + (newAcceleration * deltaTime) / Constants.DISTANCE_FACTOR;
+        Vector3 newVelocity = initialStateVector.velocity + newAcceleration * deltaTime / Constants.DISTANCE_FACTOR;
         Vector3 newPosition = initialStateVector.position + newVelocity * deltaTime;
         var motionVectors = GravityManager.Instance.GetMotionVectors(newPosition, newVelocity, gravitationalAcceleration);
 

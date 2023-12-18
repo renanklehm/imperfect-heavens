@@ -7,13 +7,13 @@ using UnityEngine.EventSystems;
 public class DeltaVSlider : MonoBehaviour, IPointerDownHandler, IPointerUpHandler
 {
     public Vector3 unitVector;
-    private MarkerBehaviour markerBehaviour;
+    private ManeuverNode markerBehaviour;
     private Slider slider;
     public StateTracker isDragging = new StateTracker();
 
     private void Start()
     {
-        markerBehaviour = GetComponentInParent<MarkerBehaviour>();
+        markerBehaviour = GetComponentInParent<ManeuverNode>();
         slider = GetComponent<Slider>();
     }
 

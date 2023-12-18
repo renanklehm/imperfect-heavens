@@ -43,18 +43,13 @@ public class Body : NetworkBehaviour
                 GravityManager.Instance.timestamp
             );
         }
-
-        if (solverType == SolverType.FreeBody)
-        {
-            name = "Player (ID: " + Object.InputAuthority.PlayerId.ToString("00") + ")";
-        }
-        trajectory.InitializeTrajectory(this, name + " - MainTrajectory");
+        trajectory.InitializeTrajectory(this);
         trajectory.isManeuver = false;
     }
 
     private void Update()
     {
-        if (!fullyInstantiated && GravityManager.Instance != null && trajectory != null)
+        if (!fullyInstantiated && GravityManager.Instance != null && trajectory != null && mass != 0)
         {
             bodySolver.GenerateTrajectory();
             fullyInstantiated = true;
@@ -72,6 +67,12 @@ public class Body : NetworkBehaviour
         {
             currentStateVector = Solver.Solve(currentStateVector, mass, GravityManager.Instance.deltaTime, GravityManager.Instance.timestamp);
         }
+    }
+
+    public void SetName(string newName)
+    {
+        name = newName + " (ID: " + Object.InputAuthority.PlayerId.ToString("00") + ")";
+        trajectory.name = name + " - Trajectory";
     }
 
     private static void UpdateStateVector(Changed<Body> changed)

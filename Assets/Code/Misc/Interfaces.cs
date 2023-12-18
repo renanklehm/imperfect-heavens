@@ -11,7 +11,12 @@ public interface iBodySolver
         throw new Exception("Not implemented");
     }
 
-    public void GenerateTrajectory(BurnData burnData = default)
+    public void GenerateTrajectory(Maneuver burnData = default)
+    {
+        throw new Exception("Not implemented");
+    }
+
+    public void SetManeuver(Maneuver burnData)
     {
         throw new Exception("Not implemented");
     }

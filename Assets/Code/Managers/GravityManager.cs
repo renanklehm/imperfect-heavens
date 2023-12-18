@@ -8,13 +8,7 @@ public class GravityManager : NetworkBehaviour
     [Networked] 
     public float timestamp { get; set; }
 
-    [Range(1, 100)]
-    public float maxTimestepMultiplier = 10f;
-    [Range(0, 1)]
-    public float dampFactor = 0.25f;
-
     public float timeWarp = 1;
-    public SmoothCurve dynamicTimestamp;
     public List<Body> onRailsBodies;
     public List<Body> freeBodies;
 
@@ -32,7 +26,6 @@ public class GravityManager : NetworkBehaviour
         {
             Instance = this;
         }
-        dynamicTimestamp = new SmoothCurve(maxTimestepMultiplier, dampFactor);
     }
 
     public override void FixedUpdateNetwork()

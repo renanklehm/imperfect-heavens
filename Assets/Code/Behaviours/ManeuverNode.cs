@@ -5,7 +5,7 @@ using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
 
-public class MarkerBehaviour : NetworkBehaviour
+public class ManeuverNode : NetworkBehaviour
 {
     public bool isManeuvering;
     public bool isHovering;
@@ -41,7 +41,17 @@ public class MarkerBehaviour : NetworkBehaviour
     public TMP_Text[] deltaVLabels;
     public ArrowHandler[] arrows;
 
+    [Header("Engine Settings")]
+    public TMP_Dropdown engineModeDropdown;
+    public TMP_Text engineClusterDetails;
+    public Button[] engineClusterSelectors;
+
     private Body currentBody;
+   
+    Dictionary<int, string> engineClusterOptions;
+    private int currentEngineCluster = 0;
+    Dictionary<int, string> engineModeOptions;
+    private int currentEngineMode = 0;
 
     public float throttle
     {
@@ -57,20 +67,32 @@ public class MarkerBehaviour : NetworkBehaviour
         get { return _deltaV; }
         set
         {
-            burnSimulation = shipController.SimulateBurn(ToBodyMotionFrame(value).normalized, stateVector.timestamp, throttle, value.magnitude);
-            maneuverLabel.text = "";
-            maneuverLabel.text += "burn duration:    " + burnSimulation.burnDuration.ToString("0.00") + "s\n";
-            maneuverLabel.text += "delta-v:          " + burnSimulation.deltaV.ToString("0.00") + " m/s\n";
-            maneuverLabel.text += "fuel consumption: " + burnSimulation.fuelConsumption.ToString("0.00") + " kg\n";
-            maneuverLabel.text += "remaining fuel:   " + burnSimulation.remainingFuelMass.ToString("0.00") + " kg\n";
-            if (burnSimulation.success) _deltaV = value;
-            shipController.body.bodySolver.GenerateTrajectory(burnSimulation);
+            if (value == Vector3.zero)
+            {
+                _deltaV = Vector3.zero;
+                SetDeltaVLabels();
+                return;
+            }
+
+            maneuverSimulation = new Maneuver(
+                currentEngineMode,
+                currentEngineCluster,
+                ToBodyMotionFrame(value).normalized,
+                stateVector.timestamp, 
+                throttle, 
+                value.magnitude, 
+                new Ship(shipController.ship)
+                );
+
+            if (maneuverSimulation.success) _deltaV = value;
+            shipController.body.bodySolver.GenerateTrajectory(maneuverSimulation);
+            SetDeltaVLabels();
         }
     }
     private float _throttle = 0f;
     private Vector3 _deltaV = Vector3.zero;
     private ShipController shipController;
-    private BurnData burnSimulation;
+    private Maneuver maneuverSimulation;
 
     private void Start()
     {
@@ -80,8 +102,15 @@ public class MarkerBehaviour : NetworkBehaviour
         tooltipCanvas.worldCamera = Camera.main;
         maneuverCanvas.worldCamera = Camera.main;
         maneuverCanvas.gameObject.SetActive(false);
-        SetArrowsVisibility(false);
         transform.parent = null;
+
+        engineClusterOptions = shipController.ship.engineClusterOptions;
+        engineModeOptions = shipController.ship.engineClusters[currentEngineCluster].engineModeOptions;
+        engineClusterSelectors[0].interactable = false;
+        engineClusterSelectors[1].interactable = engineClusterOptions.Count > 1;
+        SetEngineModeDropdown();
+        SetClusterDetails();
+        SetArrowsVisibility(false);
     }
 
     private void Update()
@@ -97,10 +126,6 @@ public class MarkerBehaviour : NetworkBehaviour
                 deltaV += x.unitVector * x.deltaV;
             }
         }
-
-        deltaVLabels[0].text = deltaV.x.ToString("0.00");
-        deltaVLabels[1].text = deltaV.y.ToString("0.00");
-        deltaVLabels[2].text = deltaV.z.ToString("0.00");
 
         if (isHovering)
         {
@@ -191,9 +216,9 @@ public class MarkerBehaviour : NetworkBehaviour
     private Vector3 ToBodyMotionFrame(Vector3 velocity)
     {
         StateVector tempStateVector = new StateVector(stateVector);
-        tempStateVector.velocity += (velocity.x / Constants.DISTANCE_FACTOR) * tempStateVector.radialOut;
-        tempStateVector.velocity += (velocity.y / Constants.DISTANCE_FACTOR) * tempStateVector.normal;
-        tempStateVector.velocity += (velocity.z / Constants.DISTANCE_FACTOR) * tempStateVector.prograde;
+        tempStateVector.velocity += (velocity.x / Constants.DISTANCE_FACTOR) * tempStateVector.radialOut * Mathf.Sign(_deltaV.x);
+        tempStateVector.velocity += (velocity.y / Constants.DISTANCE_FACTOR) * tempStateVector.normal * Mathf.Sign(_deltaV.y);
+        tempStateVector.velocity += (velocity.z / Constants.DISTANCE_FACTOR) * tempStateVector.prograde * Mathf.Sign(_deltaV.z);
         return tempStateVector.velocity;
     }
 
@@ -223,7 +248,7 @@ public class MarkerBehaviour : NetworkBehaviour
 
     public void SetManeuver()
     {
-        shipController.RPC_AddManeuver(shipController.Runner.LocalPlayer);
+        shipController.AddManeuver(maneuverSimulation);
         DiscardManeuver();
     }
 
@@ -248,6 +273,24 @@ public class MarkerBehaviour : NetworkBehaviour
         ClearSliders();
     }
 
+    public void ChangeEngineMode(int index)
+    {
+        currentEngineMode = index;
+        SetClusterDetails();
+    }
+
+    public void ChangeEngineCluster(bool isNext)
+    {
+        if (isNext) currentEngineCluster++;
+        else currentEngineCluster--;
+
+        engineClusterSelectors[0].interactable = currentEngineCluster > 0;
+        engineClusterSelectors[1].interactable = currentEngineCluster < engineClusterOptions.Count - 1;
+
+        SetClusterDetails();
+        SetEngineModeDropdown();
+    }
+
     public void SetDeltaV(Vector3 unitVector, float value)
     {
         deltaV += unitVector * GetScaledDeltaV(Mathf.Abs(value)) * Mathf.Sign(value);
@@ -264,5 +307,44 @@ public class MarkerBehaviour : NetworkBehaviour
     public float GetScaledDeltaV(float lerpFactor)
     {
         return Mathf.Pow(lerpFactor, exponentialFactor) * maxDeltaV;
+    }
+
+    private void SetMinimunThrottle()
+    {
+        float maxMassFlow = shipController.ship.engineClusters[currentEngineCluster].engineModes[currentEngineMode].maxMassFlow;
+        float minMassFlow = shipController.ship.engineClusters[currentEngineCluster].engineModes[currentEngineMode].minMassFlow;
+        float minThrottle = minMassFlow / maxMassFlow;
+        throttleSlider.minValue = minThrottle;
+    }
+
+    private void SetEngineModeDropdown()
+    {
+        engineModeOptions = shipController.ship.engineClusters[currentEngineCluster].engineModeOptions;
+        engineModeDropdown.ClearOptions();
+        engineModeDropdown.AddOptions(new List<string>(engineModeOptions.Values));
+        engineModeDropdown.value = 0;
+        SetMinimunThrottle();
+    }
+
+    private void SetClusterDetails()
+    {
+        string clusterDetails = engineClusterOptions[currentEngineCluster] + "\n";
+        clusterDetails += "TWR    : " + shipController.ship.TWR(throttle, 0f, currentEngineMode, currentEngineCluster).ToString("0.000") + "\n";
+        clusterDetails += "Delta-V: " + shipController.ship.DeltaV(0f, currentEngineMode, currentEngineCluster).ToString("0") + "\n";
+        engineClusterDetails.text = clusterDetails;
+        deltaV = _deltaV;
+        SetMinimunThrottle();
+    }
+
+    private void SetDeltaVLabels()
+    {
+        maneuverLabel.text = "";
+        maneuverLabel.text += "burn duration : " + maneuverSimulation.burnDuration.ToString("0.00") + "s\n";
+        maneuverLabel.text += "delta-v       : " + maneuverSimulation.deltaV.ToString("0.00") + " m/s\n";
+        maneuverLabel.text += "remaining fuel: " + maneuverSimulation.remainingFuelMass.ToString("0.00") + " kg\n";
+
+        deltaVLabels[0].text = _deltaV.x.ToString("0.00");
+        deltaVLabels[1].text = _deltaV.y.ToString("0.00");
+        deltaVLabels[2].text = _deltaV.z.ToString("0.00");
     }
 }
